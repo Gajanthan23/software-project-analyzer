@@ -1,10 +1,39 @@
 /**
  * pages/LoginPage.jsx
- * Phase 2: static form shell — no API call yet (Phase 5).
+ * 
+ * Live login page component wired to authService.login.
  */
-import { Link } from 'react-router-dom'
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      await authService.login(formData);
+      navigate('/dashboard');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.errors?.[0] || 'Login failed. Please check your credentials.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="mb-8 text-center">
@@ -14,54 +43,62 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Phase 2 notice */}
-      <div className="mb-6 rounded-lg border border-indigo-500/30 bg-indigo-500/10
-                      px-4 py-3 text-xs text-indigo-300">
-        🔒 Auth logic added in <strong>Phase 5</strong>. Form is UI-only for now.
-      </div>
+      {error && (
+        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-300">
+          ⚠ {error}
+        </div>
+      )}
 
-      <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label htmlFor="login-email"
-                 className="mb-1.5 block text-sm font-medium text-slate-300">
+          <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-slate-300">
             Email
           </label>
           <input
             id="login-email"
+            name="email"
             type="email"
+            value={formData.email}
+            onChange={handleChange}
             placeholder="you@example.com"
             className="input"
+            required
             autoComplete="email"
           />
         </div>
 
         <div>
-          <label htmlFor="login-password"
-                 className="mb-1.5 block text-sm font-medium text-slate-300">
+          <label htmlFor="login-password" className="mb-1.5 block text-sm font-medium text-slate-300">
             Password
           </label>
           <input
             id="login-password"
+            name="password"
             type="password"
+            value={formData.password}
+            onChange={handleChange}
             placeholder="••••••••"
             className="input"
+            required
             autoComplete="current-password"
           />
         </div>
 
-        <button type="submit" className="btn-primary w-full justify-center">
-          Sign In
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-primary w-full justify-center"
+        >
+          {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-500">
         Don&apos;t have an account?{' '}
-        <Link to="/register"
-              className="font-medium text-indigo-400 hover:text-indigo-300
-                         transition-colors">
+        <Link to="/register" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
           Register
         </Link>
       </p>
     </>
-  )
+  );
 }

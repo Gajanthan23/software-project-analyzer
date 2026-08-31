@@ -1,10 +1,39 @@
 /**
  * pages/RegisterPage.jsx
- * Phase 2: static form shell — no API call yet (Phase 5).
+ * 
+ * Live registration page component wired to authService.register.
  */
-import { Link } from 'react-router-dom'
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      await authService.register(formData);
+      navigate('/dashboard');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.errors?.[0] || 'Registration failed. Please check your details.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="mb-8 text-center">
@@ -14,68 +43,79 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      {/* Phase 2 notice */}
-      <div className="mb-6 rounded-lg border border-indigo-500/30 bg-indigo-500/10
-                      px-4 py-3 text-xs text-indigo-300">
-        🔒 Auth logic added in <strong>Phase 5</strong>. Form is UI-only for now.
-      </div>
+      {error && (
+        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-300">
+          ⚠ {error}
+        </div>
+      )}
 
-      <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label htmlFor="reg-name"
-                 className="mb-1.5 block text-sm font-medium text-slate-300">
+          <label htmlFor="reg-name" className="mb-1.5 block text-sm font-medium text-slate-300">
             Full name
           </label>
           <input
             id="reg-name"
+            name="name"
             type="text"
+            value={formData.name}
+            onChange={handleChange}
             placeholder="Jane Doe"
             className="input"
+            required
             autoComplete="name"
           />
         </div>
 
         <div>
-          <label htmlFor="reg-email"
-                 className="mb-1.5 block text-sm font-medium text-slate-300">
+          <label htmlFor="reg-email" className="mb-1.5 block text-sm font-medium text-slate-300">
             Email
           </label>
           <input
             id="reg-email"
+            name="email"
             type="email"
+            value={formData.email}
+            onChange={handleChange}
             placeholder="you@example.com"
             className="input"
+            required
             autoComplete="email"
           />
         </div>
 
         <div>
-          <label htmlFor="reg-password"
-                 className="mb-1.5 block text-sm font-medium text-slate-300">
+          <label htmlFor="reg-password" className="mb-1.5 block text-sm font-medium text-slate-300">
             Password
           </label>
           <input
             id="reg-password"
+            name="password"
             type="password"
-            placeholder="Min. 8 characters"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Min. 6 characters"
             className="input"
+            required
             autoComplete="new-password"
           />
         </div>
 
-        <button type="submit" className="btn-primary w-full justify-center">
-          Create Account
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-primary w-full justify-center"
+        >
+          {loading ? 'Creating account...' : 'Create Account'}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-500">
         Already have an account?{' '}
-        <Link to="/login"
-              className="font-medium text-indigo-400 hover:text-indigo-300
-                         transition-colors">
+        <Link to="/login" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
           Sign in
         </Link>
       </p>
     </>
-  )
+  );
 }
