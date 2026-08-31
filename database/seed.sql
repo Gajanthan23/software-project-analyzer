@@ -1,0 +1,3 @@
+-- database/seed.sql
+-- Phase 4: Placeholder for database seeding.
+-- Seed scripts and mock user accounts will be added here in future phases to support development testing.
