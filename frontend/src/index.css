@@ -1,0 +1,160 @@
+/* ─── Tailwind v3 directives ──────────────────────────────────────────────── */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS design tokens (consumed by components via Tailwind utilities) ─────
+   These are kept here so we have a single source of truth that can be
+   adjusted without touching every component file.
+   ──────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Surface palette */
+  --surface-bg:        #080812;
+  --surface-card:      #0f0f1e;
+  --surface-elevated:  #161628;
+  --surface-border:    #1e1e3a;
+
+  /* Brand gradient */
+  --gradient-primary:  linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --gradient-glow:     linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(139,92,246,0.15) 100%);
+
+  /* Status colours */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger:  #ef4444;
+  --color-info:    #3b82f6;
+
+  /* Score band colours (Section 18) */
+  --score-excellent:   #10b981;   /* 90-100 */
+  --score-advanced:    #6366f1;   /* 75-89  */
+  --score-proficient:  #3b82f6;   /* 60-74  */
+  --score-developing:  #f59e0b;   /* 40-59  */
+  --score-needs-work:  #ef4444;   /* 0-39   */
+}
+
+/* ─── Base resets ─────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--surface-bg);
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    @apply text-slate-100 antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--surface-card);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--surface-border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #6366f1;
+  }
+
+  /* Selection colour */
+  ::selection {
+    background: rgba(99, 102, 241, 0.35);
+    color: #f1f5f9;
+  }
+}
+
+/* ─── Reusable component classes ─────────────────────────────────────────── */
+@layer components {
+  /* Cards */
+  .card {
+    @apply rounded-xl border border-[#1e1e3a] bg-[#0f0f1e] p-6;
+  }
+  .card-elevated {
+    @apply rounded-xl border border-[#1e1e3a] bg-[#161628] p-6;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5
+           text-sm font-semibold text-white shadow-lg shadow-indigo-900/30
+           transition-all duration-200
+           hover:bg-indigo-500 hover:shadow-indigo-800/40
+           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#080812]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-lg border border-[#1e1e3a] bg-[#161628]
+           px-5 py-2.5 text-sm font-semibold text-slate-300
+           transition-all duration-200
+           hover:border-indigo-500/50 hover:bg-[#1e1e3a] hover:text-white
+           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#080812];
+  }
+  .btn-danger {
+    @apply inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5
+           text-sm font-semibold text-white
+           transition-all duration-200
+           hover:bg-red-500
+           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-[#080812];
+  }
+
+  /* Form inputs */
+  .input {
+    @apply w-full rounded-lg border border-[#1e1e3a] bg-[#0f0f1e] px-4 py-3
+           text-sm text-slate-100 placeholder-slate-500
+           transition-all duration-200
+           focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* Gradient text utility */
+  .gradient-text {
+    @apply bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent;
+  }
+
+  /* Page heading */
+  .page-title {
+    @apply text-2xl font-bold text-slate-100;
+  }
+  .page-subtitle {
+    @apply mt-1 text-sm text-slate-400;
+  }
+
+  /* Placeholder panel — shown while a feature is not yet implemented */
+  .placeholder-panel {
+    @apply flex flex-col items-center justify-center rounded-xl border border-dashed
+           border-[#1e1e3a] bg-[#0f0f1e] py-20 text-center;
+  }
+}
+
+/* ─── Animations ──────────────────────────────────────────────────────────── */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease both;
+  }
+  .animate-slide-up {
+    animation: slideUp 0.4s ease both;
+  }
+  .glow-indigo {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
