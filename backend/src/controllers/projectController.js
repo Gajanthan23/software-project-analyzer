@@ -1,25 +1,24 @@
 /**
  * controllers/projectController.js
  * 
- * Handlers for project creation, listing, and detail retrieval.
+ * Handlers for project creation, listing, detail retrieval, and Phase 7 debug clone.
  */
 
 const { parseGitHubUrl } = require('../utils/githubUrlParser');
 const githubService = require('../services/githubService');
+const repositoryDownloader = require('../services/repositoryDownloader');
 const projectModel = require('../models/projectModel');
 const logger = require('../utils/logger');
+const fs = require('fs');
 
 const projectController = {
   /**
    * POST /api/projects
-   * Validates GitHub URL, fetches repository metadata from GitHub API,
-   * and saves the project record in PostgreSQL.
    */
   createProject: async (req, res, next) => {
     try {
       const { repoUrl } = req.body;
 
-      // 1. Validate GitHub URL
       const urlValidation = parseGitHubUrl(repoUrl);
       if (!urlValidation.isValid) {
         return res.status(400).json({
@@ -30,10 +29,8 @@ const projectController = {
 
       const { owner, name, cleanUrl } = urlValidation;
 
-      // 2. Fetch metadata from GitHub REST API
       const meta = await githubService.fetchRepoData(owner, name);
 
-      // 3. Save / Upsert in Database
       const project = await projectModel.create({
         userId: req.user.id,
         repoUrl: cleanUrl,
@@ -70,7 +67,6 @@ const projectController = {
 
   /**
    * GET /api/projects
-   * Returns all projects for the authenticated user.
    */
   getProjects: async (req, res, next) => {
     try {
@@ -88,7 +84,6 @@ const projectController = {
 
   /**
    * GET /api/projects/:id
-   * Returns a specific project by ID for the authenticated user.
    */
   getProjectById: async (req, res, next) => {
     try {
@@ -105,6 +100,70 @@ const projectController = {
       return res.status(200).json({
         status: 'success',
         data: { project }
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * POST /api/projects/:id/download-debug
+   * TEMPORARY PHASE 7 DEBUG ENDPOINT.
+   * Clones project repository into an isolated temporary workspace,
+   * counts total files, verifies disk presence, and cleans up workspace.
+   */
+  downloadDebugProject: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const project = await projectModel.findByIdAndUser(id, req.user.id);
+
+      if (!project) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Project not found.'
+        });
+      }
+
+      let verifiedInCallback = false;
+      let downloadStats = null;
+      let usedWorkspacePath = '';
+
+      // Execute within temporary workspace with guaranteed cleanup
+      const result = await repositoryDownloader.withWorkspace(project.repo_url, async (workspacePath, stats) => {
+        usedWorkspacePath = workspacePath;
+        downloadStats = stats;
+
+        // Verify workspace exists on disk during execution
+        verifiedInCallback = fs.existsSync(workspacePath);
+        logger.info(`Phase 7 Debug Callback: Workspace ${workspacePath} verified on disk? ${verifiedInCallback}`);
+
+        return {
+          workspace_active: verifiedInCallback,
+          total_files: stats.totalFiles,
+          total_bytes: stats.totalBytes
+        };
+      });
+
+      // Confirm cleanup happened after callback returned
+      const existsAfterCleanup = fs.existsSync(usedWorkspacePath);
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Phase 7 Download & Cleanup verification completed successfully.',
+        data: {
+          project_id: project.id,
+          project_name: `${project.owner}/${project.name}`,
+          repo_url: project.repo_url,
+          download_stats: {
+            total_files: downloadStats.totalFiles,
+            total_size_mb: (downloadStats.totalBytes / (1024 * 1024)).toFixed(2)
+          },
+          verification: {
+            workspace_created_and_verified: result.workspace_active,
+            workspace_cleaned_up: !existsAfterCleanup,
+            workspace_path_used: usedWorkspacePath
+          }
+        }
       });
     } catch (error) {
       next(error);

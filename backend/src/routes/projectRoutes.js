@@ -16,4 +16,7 @@ router.post('/', projectController.createProject);
 router.get('/', projectController.getProjects);
 router.get('/:id', projectController.getProjectById);
 
+// Phase 7 debug endpoint (protected)
+router.post('/:id/download-debug', projectController.downloadDebugProject);
+
 module.exports = router;
