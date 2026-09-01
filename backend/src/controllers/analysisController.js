@@ -73,11 +73,22 @@ const analysisController = {
           const savedMetrics = await analysisModel.saveCodeMetrics(run.id, projectId, metricsPayload);
           logger.info(`Run ${run.id}: code_metrics row saved (id=${savedMetrics.id})`);
 
-          return { analyzerResponse, savedMetrics };
+          // 7. Save complexity metrics to DB (Phase 10)
+          let savedComplexity = null;
+          if (analyzerResponse.complexity && analyzerResponse.complexity.status === 'ok') {
+            savedComplexity = await analysisModel.saveComplexityMetrics(
+              run.id,
+              projectId,
+              analyzerResponse.complexity
+            );
+            logger.info(`Run ${run.id}: complexity_metrics row saved (id=${savedComplexity.id})`);
+          }
+
+          return { analyzerResponse, savedMetrics, savedComplexity };
         }
       );
 
-      // 7. Mark completed
+      // 8. Mark completed
       const completedRun = await analysisModel.updateRunStatus(run.id, 'completed');
 
       return res.status(200).json({
@@ -85,10 +96,11 @@ const analysisController = {
         message: 'Repository analysis completed successfully.',
         data: {
           run: completedRun,
-          repository:  analysisResult.analyzerResponse.repository,
-          metrics:     analysisResult.analyzerResponse.metrics,
-          // Placeholders for future phases — forward what the analyzer returned
+          repository:    analysisResult.analyzerResponse.repository,
+          metrics:       analysisResult.analyzerResponse.metrics,
           complexity:    analysisResult.analyzerResponse.complexity,
+          // Placeholders for future phases — forward what the analyzer returned
+          duplication:   analysisResult.analyzerResponse.duplication,
           testing:       analysisResult.analyzerResponse.testing,
           documentation: analysisResult.analyzerResponse.documentation,
           dependencies:  analysisResult.analyzerResponse.dependencies,
@@ -146,7 +158,9 @@ const analysisController = {
       }
 
       const metrics = await analysisModel.getLatestMetricsForProject(projectId);
-      if (!metrics) {
+      const complexity = await analysisModel.getLatestComplexityForProject(projectId);
+
+      if (!metrics && !complexity) {
         return res.status(404).json({
           status:  'error',
           message: 'No completed analysis found for this project. Run an analysis first.',
@@ -155,7 +169,36 @@ const analysisController = {
 
       return res.status(200).json({
         status: 'success',
-        data:   { metrics },
+        data:   { metrics, complexity },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest/complexity
+   * Returns the most recent completed complexity_metrics row for a project.
+   */
+  getLatestComplexity: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const complexity = await analysisModel.getLatestComplexityForProject(projectId);
+      if (!complexity) {
+        return res.status(404).json({
+          status:  'error',
+          message: 'No completed complexity analysis found for this project. Run an analysis first.',
+        });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data:   { complexity },
       });
     } catch (error) {
       next(error);

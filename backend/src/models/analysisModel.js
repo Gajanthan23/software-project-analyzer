@@ -101,6 +101,58 @@ const analysisModel = {
   },
 
   /**
+   * Save cyclomatic complexity metrics for a completed run.
+   */
+  saveComplexityMetrics: async (runId, projectId, complexity) => {
+    const result = await db.query(
+      `INSERT INTO complexity_metrics (
+         run_id, project_id,
+         total_functions, avg_complexity, max_complexity,
+         high_complexity_count, high_complexity_threshold,
+         complexity_distribution, top_complex_functions, file_complexity,
+         analysis_tool
+       ) VALUES (
+         $1, $2,
+         $3, $4, $5,
+         $6, $7,
+         $8, $9, $10,
+         $11
+       )
+       RETURNING *`,
+      [
+        runId, projectId,
+        complexity.total_functions || 0,
+        complexity.avg_complexity || 0.0,
+        complexity.max_complexity || 0,
+        complexity.high_complexity_count || 0,
+        complexity.high_complexity_threshold || 10,
+        JSON.stringify(complexity.complexity_distribution || {}),
+        JSON.stringify(complexity.top_complex_functions || []),
+        JSON.stringify(complexity.file_complexity || []),
+        complexity.analysis_tool || null,
+      ]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Get latest complexity metrics row for a project.
+   */
+  getLatestComplexityForProject: async (projectId) => {
+    const result = await db.query(
+      `SELECT cx.*
+       FROM complexity_metrics cx
+       JOIN analysis_runs ar ON ar.id = cx.run_id
+       WHERE cx.project_id = $1
+         AND ar.status = 'completed'
+       ORDER BY cx.created_at DESC
+       LIMIT 1`,
+      [projectId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
    * Get all analysis runs for a project (newest first).
    */
   getRunsForProject: async (projectId) => {
@@ -116,3 +168,4 @@ const analysisModel = {
 };
 
 module.exports = analysisModel;
+

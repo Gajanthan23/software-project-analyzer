@@ -71,3 +71,21 @@ CREATE TABLE IF NOT EXISTS code_metrics (
     analysis_tool       TEXT,
     created_at          TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Complexity Metrics table (Phase 10) — stores cyclomatic complexity & function hotspots
+CREATE TABLE IF NOT EXISTS complexity_metrics (
+    id                        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    run_id                    UUID NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    project_id                UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    total_functions           INT  DEFAULT 0,
+    avg_complexity            NUMERIC(6, 2) DEFAULT 0.0,
+    max_complexity            INT  DEFAULT 0,
+    high_complexity_count     INT  DEFAULT 0,
+    high_complexity_threshold INT  DEFAULT 10,
+    complexity_distribution   JSONB DEFAULT '{}'::jsonb,
+    top_complex_functions     JSONB DEFAULT '[]'::jsonb,
+    file_complexity           JSONB DEFAULT '[]'::jsonb,
+    analysis_tool             TEXT,
+    created_at                TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+

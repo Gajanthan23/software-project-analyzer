@@ -11,6 +11,7 @@ import os
 from fastapi import FastAPI, HTTPException, status
 from app.schemas import AnalysisRequest, AnalysisResponse
 from app.analyzers.repository import analyze_repository
+from app.analyzers.complexity import analyze_complexity
 
 app = FastAPI(
     title="Software Project Complexity & Quality Analyzer Engine",
@@ -57,7 +58,16 @@ def analyze(request: AnalysisRequest):
             detail=f"Repository analysis failed: {str(exc)}"
         )
 
-    # 3. Build response — real values for repository + metrics sections,
+    # 3. Phase 10 — Run real cyclomatic complexity analysis
+    try:
+        complexity_data = analyze_complexity(repo_path)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Complexity analysis failed: {str(exc)}"
+        )
+
+    # 4. Build response — real values for repository, metrics, and complexity sections,
     #    explicit not_implemented for all later phases (Rule 4: no fake data).
     return AnalysisResponse(
         status="success",
@@ -89,10 +99,18 @@ def analyze(request: AnalysisRequest):
             "analysis_tool":    metrics_data["analysis_tool"],
         },
 
-        # ── Phases 10–24: still not_implemented (Rule 4) ─────────────────
+        # ── Phase 10: REAL values ────────────────────────────────────────
         complexity={
-            "status": "not_implemented",
-            "message": "Cyclomatic complexity via radon/lizard arrives in Phase 10."
+            "status":                    "ok",
+            "total_functions":           complexity_data["total_functions"],
+            "avg_complexity":            complexity_data["avg_complexity"],
+            "max_complexity":            complexity_data["max_complexity"],
+            "high_complexity_count":     complexity_data["high_complexity_count"],
+            "high_complexity_threshold": complexity_data["high_complexity_threshold"],
+            "complexity_distribution":   complexity_data["complexity_distribution"],
+            "top_complex_functions":     complexity_data["top_complex_functions"],
+            "file_complexity":           complexity_data["file_complexity"],
+            "analysis_tool":             complexity_data["analysis_tool"],
         },
         duplication={
             "status": "not_implemented",
