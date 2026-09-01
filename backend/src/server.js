@@ -13,6 +13,7 @@ const cors = require('cors');
 const logger = require('./utils/logger');
 const healthRouter = require('./routes/health');
 const authRoutes = require('./routes/authRoutes');
+const projectRoutes = require('./routes/projectRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -37,6 +38,7 @@ app.use((req, res, next) => {
 // ─── Routes ─────────────────────────────────────────────────────────────────
 app.use('/api', healthRouter);
 app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
 
 // Standard 404 Route handler for unmatched API routes
 app.use((req, res, next) => {
