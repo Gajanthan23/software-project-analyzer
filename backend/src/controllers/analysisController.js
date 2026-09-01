@@ -1,0 +1,166 @@
+/**
+ * controllers/analysisController.js
+ *
+ * Handles the full Phase 9 end-to-end analysis pipeline:
+ *   POST /api/projects/:id/analyze
+ *     1. Load project from DB (ownership check)
+ *     2. Create analysis_run row (status: pending → running)
+ *     3. Clone repo via repositoryDownloader.withWorkspace()
+ *     4. Call Python analyzer /analyze inside the workspace
+ *     5. Save code_metrics row to DB
+ *     6. Mark run completed (or failed)
+ *     7. Return results — workspace is cleaned up by try/finally in withWorkspace
+ *
+ *   GET /api/projects/:id/analyses          → list runs for a project
+ *   GET /api/projects/:id/analyses/latest   → latest metrics for a project
+ */
+
+const projectModel  = require('../models/projectModel');
+const analysisModel = require('../models/analysisModel');
+const repositoryDownloader = require('../services/repositoryDownloader');
+const { callAnalyzer }     = require('../services/analyzerService');
+const logger = require('../utils/logger');
+
+const analysisController = {
+  /**
+   * POST /api/projects/:id/analyze
+   * Full pipeline: download → analyze → store → return.
+   */
+  runAnalysis: async (req, res, next) => {
+    const { id: projectId } = req.params;
+    let run = null;
+
+    try {
+      // 1. Verify project belongs to this user
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      // 2. Create run record (pending)
+      run = await analysisModel.createRun(projectId);
+      logger.info(`Analysis run ${run.id} created for project ${project.owner}/${project.name}`);
+
+      // 3. Mark running
+      await analysisModel.updateRunStatus(run.id, 'running');
+
+      // 4. Clone → analyze → store (workspace cleaned up automatically by withWorkspace)
+      const analysisResult = await repositoryDownloader.withWorkspace(
+        project.repo_url,
+        async (workspacePath, downloadStats) => {
+          logger.info(`Run ${run.id}: workspace ready at ${workspacePath} (${downloadStats.totalFiles} files)`);
+
+          // 5. Call Python analyzer
+          const analyzerResponse = await callAnalyzer(workspacePath);
+          logger.info(`Run ${run.id}: analyzer responded, primary_language=${analyzerResponse.repository?.primary_language}`);
+
+          // 6. Save metrics to DB
+          const metricsPayload = {
+            ...analyzerResponse.metrics,
+            // Merge file-structure fields from repository section
+            total_files:         analyzerResponse.repository.total_files,
+            source_files:        analyzerResponse.repository.source_files,
+            test_files:          analyzerResponse.repository.test_files,
+            config_files:        analyzerResponse.repository.config_files,
+            documentation_files: analyzerResponse.repository.documentation_files,
+            other_files:         analyzerResponse.repository.other_files,
+            modules:             analyzerResponse.repository.modules,
+            directory_depth:     analyzerResponse.repository.directory_depth,
+            primary_language:    analyzerResponse.repository.primary_language,
+            languages:           analyzerResponse.repository.languages,
+          };
+
+          const savedMetrics = await analysisModel.saveCodeMetrics(run.id, projectId, metricsPayload);
+          logger.info(`Run ${run.id}: code_metrics row saved (id=${savedMetrics.id})`);
+
+          return { analyzerResponse, savedMetrics };
+        }
+      );
+
+      // 7. Mark completed
+      const completedRun = await analysisModel.updateRunStatus(run.id, 'completed');
+
+      return res.status(200).json({
+        status:  'success',
+        message: 'Repository analysis completed successfully.',
+        data: {
+          run: completedRun,
+          repository:  analysisResult.analyzerResponse.repository,
+          metrics:     analysisResult.analyzerResponse.metrics,
+          // Placeholders for future phases — forward what the analyzer returned
+          complexity:    analysisResult.analyzerResponse.complexity,
+          testing:       analysisResult.analyzerResponse.testing,
+          documentation: analysisResult.analyzerResponse.documentation,
+          dependencies:  analysisResult.analyzerResponse.dependencies,
+          security:      analysisResult.analyzerResponse.security,
+          architecture:  analysisResult.analyzerResponse.architecture,
+          git_history:   analysisResult.analyzerResponse.git_history,
+          scores:        analysisResult.analyzerResponse.scores,
+          prediction:    analysisResult.analyzerResponse.prediction,
+        },
+      });
+
+    } catch (error) {
+      // Mark run as failed if we managed to create one
+      if (run) {
+        await analysisModel.updateRunStatus(run.id, 'failed', error.message).catch(() => {});
+        logger.error(`Analysis run ${run.id} failed: ${error.message}`);
+      }
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses
+   * Returns all analysis run records for a project.
+   */
+  listRuns: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const runs = await analysisModel.getRunsForProject(projectId);
+      return res.status(200).json({
+        status:  'success',
+        results: runs.length,
+        data:    { runs },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest
+   * Returns the most recent completed code_metrics row for a project.
+   */
+  getLatestMetrics: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const metrics = await analysisModel.getLatestMetricsForProject(projectId);
+      if (!metrics) {
+        return res.status(404).json({
+          status:  'error',
+          message: 'No completed analysis found for this project. Run an analysis first.',
+        });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data:   { metrics },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+};
+
+module.exports = analysisController;

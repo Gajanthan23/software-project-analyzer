@@ -29,3 +29,45 @@ CREATE TABLE IF NOT EXISTS projects (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT unique_user_project UNIQUE(user_id, owner, name)
 );
+
+-- Analysis Runs table (Phase 9) — tracks each analysis lifecycle
+CREATE TABLE IF NOT EXISTS analysis_runs (
+    id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id   UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    status       VARCHAR(20) NOT NULL DEFAULT 'pending'
+                   CHECK (status IN ('pending', 'running', 'completed', 'failed')),
+    error_message TEXT,
+    started_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Code Metrics table (Phase 9) — stores LOC & structural metrics per run
+CREATE TABLE IF NOT EXISTS code_metrics (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    run_id              UUID NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    project_id          UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    -- File counts
+    total_files         INT  DEFAULT 0,
+    source_files        INT  DEFAULT 0,
+    test_files          INT  DEFAULT 0,
+    config_files        INT  DEFAULT 0,
+    documentation_files INT  DEFAULT 0,
+    other_files         INT  DEFAULT 0,
+    -- LOC breakdown
+    total_loc           INT  DEFAULT 0,
+    code_loc            INT  DEFAULT 0,
+    comment_loc         INT  DEFAULT 0,
+    blank_loc           INT  DEFAULT 0,
+    -- Structural counts
+    functions           INT  DEFAULT 0,
+    classes             INT  DEFAULT 0,
+    modules             INT  DEFAULT 0,
+    directory_depth     INT  DEFAULT 0,
+    dependency_count    INT  DEFAULT 0,
+    -- Language data (JSONB for flexibility)
+    primary_language    VARCHAR(100),
+    languages           JSONB DEFAULT '{}'::jsonb,
+    -- Metadata
+    analysis_tool       TEXT,
+    created_at          TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
