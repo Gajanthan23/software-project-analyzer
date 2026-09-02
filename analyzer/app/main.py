@@ -4,7 +4,7 @@ app/main.py
 FastAPI Application Entry Point for the Python Analysis Microservice.
 Exposes:
   - GET  /health
-  - POST /analyze  (Phase 8: contract shape; Phase 9: real repository + metrics sections)
+  - POST /analyze  (Phase 8: contract; Phase 9: metrics; Phase 10: complexity; Phase 11: duplication; Phase 12: testing)
 """
 
 import os
@@ -13,6 +13,7 @@ from app.schemas import AnalysisRequest, AnalysisResponse
 from app.analyzers.repository import analyze_repository
 from app.analyzers.complexity import analyze_complexity
 from app.analyzers.duplication import analyze_duplication
+from app.analyzers.testing import analyze_testing
 
 app = FastAPI(
     title="Software Project Complexity & Quality Analyzer Engine",
@@ -80,6 +81,15 @@ def analyze(request: AnalysisRequest):
             detail=f"Duplication analysis failed: {str(exc)}"
         )
 
+    # 5. Phase 12 — Run real testing suite & coverage analysis
+    try:
+        testing_data = analyze_testing(repo_path)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Testing analysis failed: {str(exc)}"
+        )
+
     # Compile recommendations from analyzers
     all_recommendations = []
     for rec in duplication_data.get("recommendations", []):
@@ -89,7 +99,14 @@ def analyze(request: AnalysisRequest):
             "message": rec
         })
 
-    # 5. Build response — real values for repository, metrics, complexity, duplication
+    if not testing_data.get("has_tests", False):
+        all_recommendations.append({
+            "category": "testing",
+            "type": "quality",
+            "message": "No test suite detected. Add unit and integration tests (e.g. Jest, PyTest) to ensure software reliability."
+        })
+
+    # 6. Build response — real values for repository, metrics, complexity, duplication, testing
     return AnalysisResponse(
         status="success",
         repository_path=os.path.abspath(repo_path),
@@ -146,10 +163,28 @@ def analyze(request: AnalysisRequest):
             "recommendations":        duplication_data["recommendations"],
             "analysis_tool":          duplication_data["analysis_tool"],
         },
+
+        # ── Phase 12: REAL values ────────────────────────────────────────
         testing={
-            "status": "not_implemented",
-            "message": "Test detection & coverage parsing arrives in Phase 12."
+            "status":                     "ok",
+            "has_tests":                  testing_data["has_tests"],
+            "test_files_count":           testing_data["test_files_count"],
+            "source_files_count":         testing_data["source_files_count"],
+            "test_to_source_file_ratio":  testing_data["test_to_source_file_ratio"],
+            "test_loc":                   testing_data["test_loc"],
+            "source_loc":                 testing_data["source_loc"],
+            "test_to_source_loc_ratio":   testing_data["test_to_source_loc_ratio"],
+            "test_frameworks":            testing_data["test_frameworks"],
+            "has_coverage_report":        testing_data["has_coverage_report"],
+            "coverage_percentage":        testing_data["coverage_percentage"],
+            "coverage_status":            testing_data["coverage_status"],
+            "coverage_message":           testing_data["coverage_message"],
+            "test_directories":           testing_data["test_directories"],
+            "test_files":                 testing_data["test_files"],
+            "analysis_tool":              testing_data["analysis_tool"],
         },
+
+        # ── Phases 13–24: still not_implemented (Rule 4) ─────────────────
         documentation={
             "status": "not_implemented",
             "message": "Documentation completeness scoring arrives in Phase 13."

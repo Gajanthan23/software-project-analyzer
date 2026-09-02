@@ -95,11 +95,22 @@ const analysisController = {
             logger.info(`Run ${run.id}: duplication_metrics row saved (id=${savedDuplication.id})`);
           }
 
-          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication };
+          // 9. Save testing metrics to DB (Phase 12)
+          let savedTesting = null;
+          if (analyzerResponse.testing && analyzerResponse.testing.status === 'ok') {
+            savedTesting = await analysisModel.saveTestingMetrics(
+              run.id,
+              projectId,
+              analyzerResponse.testing
+            );
+            logger.info(`Run ${run.id}: testing_metrics row saved (id=${savedTesting.id})`);
+          }
+
+          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting };
         }
       );
 
-      // 9. Mark completed
+      // 10. Mark completed
       const completedRun = await analysisModel.updateRunStatus(run.id, 'completed');
 
       return res.status(200).json({
@@ -111,8 +122,8 @@ const analysisController = {
           metrics:       analysisResult.analyzerResponse.metrics,
           complexity:    analysisResult.analyzerResponse.complexity,
           duplication:   analysisResult.analyzerResponse.duplication,
-          // Placeholders for future phases — forward what the analyzer returned
           testing:       analysisResult.analyzerResponse.testing,
+          // Placeholders for future phases — forward what the analyzer returned
           documentation: analysisResult.analyzerResponse.documentation,
           dependencies:  analysisResult.analyzerResponse.dependencies,
           security:      analysisResult.analyzerResponse.security,
@@ -172,8 +183,9 @@ const analysisController = {
       const metrics = await analysisModel.getLatestMetricsForProject(projectId);
       const complexity = await analysisModel.getLatestComplexityForProject(projectId);
       const duplication = await analysisModel.getLatestDuplicationForProject(projectId);
+      const testing = await analysisModel.getLatestTestingForProject(projectId);
 
-      if (!metrics && !complexity && !duplication) {
+      if (!metrics && !complexity && !duplication && !testing) {
         return res.status(404).json({
           status:  'error',
           message: 'No completed analysis found for this project. Run an analysis first.',
@@ -182,7 +194,7 @@ const analysisController = {
 
       return res.status(200).json({
         status: 'success',
-        data:   { metrics, complexity, duplication },
+        data:   { metrics, complexity, duplication, testing },
       });
     } catch (error) {
       next(error);
@@ -241,6 +253,35 @@ const analysisController = {
       return res.status(200).json({
         status: 'success',
         data:   { duplication },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest/testing
+   * Returns the most recent completed testing_metrics row for a project.
+   */
+  getLatestTesting: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const testing = await analysisModel.getLatestTestingForProject(projectId);
+      if (!testing) {
+        return res.status(404).json({
+          status:  'error',
+          message: 'No completed testing analysis found for this project. Run an analysis first.',
+        });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data:   { testing },
       });
     } catch (error) {
       next(error);

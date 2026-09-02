@@ -105,4 +105,28 @@ CREATE TABLE IF NOT EXISTS duplication_metrics (
     created_at                TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Testing Metrics table (Phase 12) — stores test suite and code coverage metrics
+CREATE TABLE IF NOT EXISTS testing_metrics (
+    id                        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    run_id                    UUID NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    project_id                UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    has_tests                 BOOLEAN DEFAULT false,
+    test_files_count          INT  DEFAULT 0,
+    source_files_count        INT  DEFAULT 0,
+    test_to_source_file_ratio NUMERIC(5, 2) DEFAULT 0.0,
+    test_loc                  INT  DEFAULT 0,
+    source_loc                INT  DEFAULT 0,
+    test_to_source_loc_ratio  NUMERIC(5, 2) DEFAULT 0.0,
+    test_frameworks           JSONB DEFAULT '[]'::jsonb,
+    has_coverage_report       BOOLEAN DEFAULT false,
+    coverage_percentage       NUMERIC(5, 2),
+    coverage_status           VARCHAR(50) DEFAULT 'unavailable',
+    coverage_message          TEXT,
+    test_directories          JSONB DEFAULT '[]'::jsonb,
+    test_files                JSONB DEFAULT '[]'::jsonb,
+    analysis_tool             TEXT,
+    created_at                TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
 

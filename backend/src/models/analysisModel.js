@@ -202,6 +202,68 @@ const analysisModel = {
   },
 
   /**
+   * Save testing suite & coverage metrics for a completed run.
+   */
+  saveTestingMetrics: async (runId, projectId, testing) => {
+    const result = await db.query(
+      `INSERT INTO testing_metrics (
+         run_id, project_id,
+         has_tests, test_files_count, source_files_count,
+         test_to_source_file_ratio, test_loc, source_loc,
+         test_to_source_loc_ratio, test_frameworks,
+         has_coverage_report, coverage_percentage, coverage_status,
+         coverage_message, test_directories, test_files,
+         analysis_tool
+       ) VALUES (
+         $1, $2,
+         $3, $4, $5,
+         $6, $7, $8,
+         $9, $10,
+         $11, $12, $13,
+         $14, $15, $16,
+         $17
+       )
+       RETURNING *`,
+      [
+        runId, projectId,
+        testing.has_tests || false,
+        testing.test_files_count || 0,
+        testing.source_files_count || 0,
+        testing.test_to_source_file_ratio || 0.0,
+        testing.test_loc || 0,
+        testing.source_loc || 0,
+        testing.test_to_source_loc_ratio || 0.0,
+        JSON.stringify(testing.test_frameworks || []),
+        testing.has_coverage_report || false,
+        testing.coverage_percentage !== undefined ? testing.coverage_percentage : null,
+        testing.coverage_status || 'unavailable',
+        testing.coverage_message || 'Coverage data unavailable',
+        JSON.stringify(testing.test_directories || []),
+        JSON.stringify(testing.test_files || []),
+        testing.analysis_tool || null,
+      ]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Get latest testing metrics row for a project.
+   */
+  getLatestTestingForProject: async (projectId) => {
+    const result = await db.query(
+      `SELECT tm.*
+       FROM testing_metrics tm
+       JOIN analysis_runs ar ON ar.id = tm.run_id
+       WHERE tm.project_id = $1
+         AND ar.status = 'completed'
+       ORDER BY tm.created_at DESC
+       LIMIT 1`,
+      [projectId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
    * Get all analysis runs for a project (newest first).
    */
   getRunsForProject: async (projectId) => {
