@@ -128,11 +128,22 @@ const analysisController = {
             logger.info(`Run ${run.id}: dependency_metrics row saved (id=${savedDependencies.id})`);
           }
 
-          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation, savedDependencies };
+          // 12. Save security findings to DB (Phase 15)
+          let savedSecurity = [];
+          if (analyzerResponse.security && analyzerResponse.security.status === 'ok') {
+            savedSecurity = await analysisModel.saveSecurityFindings(
+              run.id,
+              projectId,
+              analyzerResponse.security
+            );
+            logger.info(`Run ${run.id}: ${savedSecurity.length} security_findings rows saved`);
+          }
+
+          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation, savedDependencies, savedSecurity };
         }
       );
 
-      // 12. Mark completed
+      // 13. Mark completed
       const completedRun = await analysisModel.updateRunStatus(run.id, 'completed');
 
       return res.status(200).json({
@@ -147,8 +158,8 @@ const analysisController = {
           testing:       analysisResult.analyzerResponse.testing,
           documentation: analysisResult.analyzerResponse.documentation,
           dependencies:  analysisResult.analyzerResponse.dependencies,
-          // Placeholders for future phases — forward what the analyzer returned
           security:      analysisResult.analyzerResponse.security,
+          // Placeholders for future phases — forward what the analyzer returned
           architecture:  analysisResult.analyzerResponse.architecture,
           git_history:   analysisResult.analyzerResponse.git_history,
           scores:        analysisResult.analyzerResponse.scores,
@@ -208,8 +219,9 @@ const analysisController = {
       const testing = await analysisModel.getLatestTestingForProject(projectId);
       const documentation = await analysisModel.getLatestDocumentationForProject(projectId);
       const dependencies = await analysisModel.getLatestDependencyForProject(projectId);
+      const security = await analysisModel.getLatestSecurityForProject(projectId);
 
-      if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies) {
+      if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies && !security) {
         return res.status(404).json({
           status:  'error',
           message: 'No completed analysis found for this project. Run an analysis first.',
@@ -218,7 +230,7 @@ const analysisController = {
 
       return res.status(200).json({
         status: 'success',
-        data:   { metrics, complexity, duplication, testing, documentation, dependencies },
+        data:   { metrics, complexity, duplication, testing, documentation, dependencies, security },
       });
     } catch (error) {
       next(error);
@@ -364,6 +376,35 @@ const analysisController = {
       return res.status(200).json({
         status: 'success',
         data:   { dependencies },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest/security
+   * Returns the most recent completed security_findings rows for a project.
+   */
+  getLatestSecurity: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const security = await analysisModel.getLatestSecurityForProject(projectId);
+      if (!security) {
+        return res.status(404).json({
+          status:  'error',
+          message: 'No completed security analysis found for this project. Run an analysis first.',
+        });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data:   { security },
       });
     } catch (error) {
       next(error);

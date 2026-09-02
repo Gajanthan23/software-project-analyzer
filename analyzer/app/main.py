@@ -4,7 +4,7 @@ app/main.py
 FastAPI Application Entry Point for the Python Analysis Microservice.
 Exposes:
   - GET  /health
-  - POST /analyze  (Phase 8: contract; Phase 9: metrics; Phase 10: complexity; Phase 11: duplication; Phase 12: testing; Phase 13: documentation; Phase 14: dependencies)
+  - POST /analyze  (Phase 8: contract; Phase 9: metrics; Phase 10: complexity; Phase 11: duplication; Phase 12: testing; Phase 13: documentation; Phase 14: dependencies; Phase 15: security)
 """
 
 import os
@@ -16,6 +16,7 @@ from app.analyzers.duplication import analyze_duplication
 from app.analyzers.testing import analyze_testing
 from app.analyzers.documentation import analyze_documentation
 from app.analyzers.dependencies import analyze_dependencies
+from app.analyzers.security import analyze_security
 
 app = FastAPI(
     title="Software Project Complexity & Quality Analyzer Engine",
@@ -114,6 +115,15 @@ def analyze(request: AnalysisRequest):
             detail=f"Dependency analysis failed: {str(exc)}"
         )
 
+    # 8. Phase 15 — Run real static security & secret scanning analysis
+    try:
+        security_data = analyze_security(repo_path)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Security analysis failed: {str(exc)}"
+        )
+
     # Update dependency_count in metrics if parsed from manifests
     if dependencies_data.get("total_dependency_count", 0) > 0:
         metrics_data["dependency_count"] = dependencies_data["total_dependency_count"]
@@ -148,7 +158,14 @@ def analyze(request: AnalysisRequest):
             "message": rec
         })
 
-    # 8. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies
+    for rec in security_data.get("recommendations", []):
+        all_recommendations.append({
+            "category": "security",
+            "type": "security",
+            "message": rec
+        })
+
+    # 9. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies, security
     return AnalysisResponse(
         status="success",
         repository_path=os.path.abspath(repo_path),
@@ -261,11 +278,18 @@ def analyze(request: AnalysisRequest):
             "analysis_tool":              dependencies_data["analysis_tool"],
         },
 
-        # ── Phases 15–24: still not_implemented (Rule 4) ─────────────────
+        # ── Phase 15: REAL values ────────────────────────────────────────
         security={
-            "status": "not_implemented",
-            "message": "Static security scan via bandit/semgrep arrives in Phase 15."
+            "status":                     "ok",
+            "total_findings":             security_data["total_findings"],
+            "severity_counts":            security_data["severity_counts"],
+            "findings":                   security_data["findings"],
+            "recommendations":            security_data["recommendations"],
+            "analysis_notes":             security_data["analysis_notes"],
+            "analysis_tool":              security_data["analysis_tool"],
         },
+
+        # ── Phases 16–24: still not_implemented (Rule 4) ─────────────────
         architecture={
             "status": "not_implemented",
             "message": "Architecture pattern heuristics arrive in Phase 16."

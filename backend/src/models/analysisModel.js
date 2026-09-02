@@ -375,6 +375,74 @@ const analysisModel = {
   },
 
   /**
+   * Save security findings for a completed run (one row per finding).
+   */
+  saveSecurityFindings: async (runId, projectId, security) => {
+    const findings = security.findings || [];
+    const savedRows = [];
+
+    for (const finding of findings) {
+      const result = await db.query(
+        `INSERT INTO security_findings (
+           run_id, project_id,
+           file_path, line_number, severity, category,
+           title, description, recommendation, rule_id,
+           analysis_tool
+         ) VALUES (
+           $1, $2,
+           $3, $4, $5, $6,
+           $7, $8, $9, $10,
+           $11
+         )
+         RETURNING *`,
+        [
+          runId, projectId,
+          finding.file || 'unknown',
+          finding.line || 1,
+          finding.severity || 'Medium',
+          finding.category || 'Security Finding',
+          finding.title || 'Potential security issue detected',
+          finding.description || '',
+          finding.recommendation || '',
+          finding.rule_id || 'SEC-01',
+          security.analysis_tool || 'Bandit/Pattern Scan Engine',
+        ]
+      );
+      savedRows.push(result.rows[0]);
+    }
+    return savedRows;
+  },
+
+  /**
+   * Get latest security findings for a project.
+   */
+  getLatestSecurityForProject: async (projectId) => {
+    const result = await db.query(
+      `SELECT sf.*
+       FROM security_findings sf
+       JOIN analysis_runs ar ON ar.id = sf.run_id
+       WHERE sf.project_id = $1
+         AND ar.status = 'completed'
+       ORDER BY sf.severity ASC, sf.created_at DESC`,
+      [projectId]
+    );
+
+    const findings = result.rows;
+    const severityCounts = {
+      Critical: findings.filter(f => f.severity === 'Critical').length,
+      High:     findings.filter(f => f.severity === 'High').length,
+      Medium:   findings.filter(f => f.severity === 'Medium').length,
+      Low:      findings.filter(f => f.severity === 'Low').length,
+    };
+
+    return {
+      total_findings: findings.length,
+      severity_counts: severityCounts,
+      findings,
+    };
+  },
+
+  /**
    * Get all analysis runs for a project (newest first).
    */
   getRunsForProject: async (projectId) => {

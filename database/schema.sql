@@ -169,7 +169,19 @@ CREATE TABLE IF NOT EXISTS dependency_metrics (
     created_at                   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-
-
-
-
+-- Security Findings table (Phase 15) — stores static analysis & secret scanner findings (one row per finding)
+CREATE TABLE IF NOT EXISTS security_findings (
+    id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    run_id         UUID NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    project_id     UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    file_path      VARCHAR(512) NOT NULL,
+    line_number    INT DEFAULT 1,
+    severity       VARCHAR(20) NOT NULL CHECK (severity IN ('Critical', 'High', 'Medium', 'Low')),
+    category       VARCHAR(100) NOT NULL,
+    title          TEXT NOT NULL,
+    description    TEXT,
+    recommendation TEXT,
+    rule_id        VARCHAR(100),
+    analysis_tool  TEXT,
+    created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

@@ -20,7 +20,7 @@ router.get('/:id', projectController.getProjectById);
 // Phase 7 debug endpoint (protected, dev-only)
 router.post('/:id/download-debug', projectController.downloadDebugProject);
 
-// Phase 9, 10, 11, 12, 13 & 14 analysis pipeline endpoints (protected)
+// Phase 9, 10, 11, 12, 13, 14 & 15 analysis pipeline endpoints (protected)
 router.post('/:id/analyze',                     analysisController.runAnalysis);
 router.get('/:id/analyses',                     analysisController.listRuns);
 router.get('/:id/analyses/latest',              analysisController.getLatestMetrics);
@@ -29,5 +29,6 @@ router.get('/:id/analyses/latest/duplication',  analysisController.getLatestDupl
 router.get('/:id/analyses/latest/testing',      analysisController.getLatestTesting);
 router.get('/:id/analyses/latest/documentation',analysisController.getLatestDocumentation);
 router.get('/:id/analyses/latest/dependencies', analysisController.getLatestDependencies);
+router.get('/:id/analyses/latest/security',     analysisController.getLatestSecurity);
 
 module.exports = router;
