@@ -232,7 +232,7 @@ const analysisController = {
           dependencies:   analysisResult.analyzerResponse.dependencies,
           security:       analysisResult.analyzerResponse.security,
           architecture:   analysisResult.analyzerResponse.architecture,
-          git_history:    analysisResult.analyzerResponse.git_history,
+          git_history:    analysisResult.savedGit || analysisResult.analyzerResponse.git_history,
           scores:         analysisResult.analyzerResponse.scores,
           recommendations: analysisResult.analyzerResponse.recommendations,
           // Placeholders for future phases — forward what the analyzer returned
@@ -296,6 +296,16 @@ const analysisController = {
       const git_history = await analysisModel.getLatestGitForProject(projectId);
       const scores = await analysisModel.getLatestScoresForProject(projectId);
       const recommendations = await analysisModel.getLatestRecommendationsForProject(projectId);
+
+      if (git_history) {
+        try {
+          const githubData = await githubService.fetchRepoData(project.owner, project.name);
+          if (githubData.api_contributors && githubData.api_contributors.length > 0) {
+            git_history.top_contributors = githubData.api_contributors;
+            git_history.contributor_count = githubData.api_contributors.length;
+          }
+        } catch (_) {}
+      }
 
       if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies && !security && !architecture && !git_history && !scores && !recommendations.length) {
         return res.status(404).json({
@@ -534,6 +544,17 @@ const analysisController = {
           status:  'error',
           message: 'No completed git history analysis found for this project. Run an analysis first.',
         });
+      }
+
+      // Live fallback to GitHub REST API contributors for 100% exact match with GitHub UI
+      try {
+        const githubData = await githubService.fetchRepoData(project.owner, project.name);
+        if (githubData.api_contributors && githubData.api_contributors.length > 0) {
+          git_history.top_contributors = githubData.api_contributors;
+          git_history.contributor_count = githubData.api_contributors.length;
+        }
+      } catch (err) {
+        logger.warn(`Could not fetch fresh GitHub API contributors for ${project.owner}/${project.name}: ${err.message}`);
       }
 
       return res.status(200).json({
