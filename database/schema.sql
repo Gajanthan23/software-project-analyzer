@@ -89,3 +89,20 @@ CREATE TABLE IF NOT EXISTS complexity_metrics (
     created_at                TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Duplication Metrics table (Phase 11) — stores code clone detection metrics
+CREATE TABLE IF NOT EXISTS duplication_metrics (
+    id                        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    run_id                    UUID NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    project_id                UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    duplicated_blocks         INT  DEFAULT 0,
+    duplicated_loc            INT  DEFAULT 0,
+    duplication_percentage    NUMERIC(5, 2) DEFAULT 0.0,
+    duplicated_files_count    INT  DEFAULT 0,
+    duplicated_files          JSONB DEFAULT '[]'::jsonb,
+    duplicate_instances       JSONB DEFAULT '[]'::jsonb,
+    recommendations           JSONB DEFAULT '[]'::jsonb,
+    analysis_tool             TEXT,
+    created_at                TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+

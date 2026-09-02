@@ -84,11 +84,22 @@ const analysisController = {
             logger.info(`Run ${run.id}: complexity_metrics row saved (id=${savedComplexity.id})`);
           }
 
-          return { analyzerResponse, savedMetrics, savedComplexity };
+          // 8. Save duplication metrics to DB (Phase 11)
+          let savedDuplication = null;
+          if (analyzerResponse.duplication && analyzerResponse.duplication.status === 'ok') {
+            savedDuplication = await analysisModel.saveDuplicationMetrics(
+              run.id,
+              projectId,
+              analyzerResponse.duplication
+            );
+            logger.info(`Run ${run.id}: duplication_metrics row saved (id=${savedDuplication.id})`);
+          }
+
+          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication };
         }
       );
 
-      // 8. Mark completed
+      // 9. Mark completed
       const completedRun = await analysisModel.updateRunStatus(run.id, 'completed');
 
       return res.status(200).json({
@@ -99,8 +110,8 @@ const analysisController = {
           repository:    analysisResult.analyzerResponse.repository,
           metrics:       analysisResult.analyzerResponse.metrics,
           complexity:    analysisResult.analyzerResponse.complexity,
-          // Placeholders for future phases — forward what the analyzer returned
           duplication:   analysisResult.analyzerResponse.duplication,
+          // Placeholders for future phases — forward what the analyzer returned
           testing:       analysisResult.analyzerResponse.testing,
           documentation: analysisResult.analyzerResponse.documentation,
           dependencies:  analysisResult.analyzerResponse.dependencies,
@@ -109,6 +120,7 @@ const analysisController = {
           git_history:   analysisResult.analyzerResponse.git_history,
           scores:        analysisResult.analyzerResponse.scores,
           prediction:    analysisResult.analyzerResponse.prediction,
+          recommendations: analysisResult.analyzerResponse.recommendations,
         },
       });
 
@@ -147,7 +159,7 @@ const analysisController = {
 
   /**
    * GET /api/projects/:id/analyses/latest
-   * Returns the most recent completed code_metrics row for a project.
+   * Returns the most recent completed metrics rows for a project.
    */
   getLatestMetrics: async (req, res, next) => {
     try {
@@ -159,8 +171,9 @@ const analysisController = {
 
       const metrics = await analysisModel.getLatestMetricsForProject(projectId);
       const complexity = await analysisModel.getLatestComplexityForProject(projectId);
+      const duplication = await analysisModel.getLatestDuplicationForProject(projectId);
 
-      if (!metrics && !complexity) {
+      if (!metrics && !complexity && !duplication) {
         return res.status(404).json({
           status:  'error',
           message: 'No completed analysis found for this project. Run an analysis first.',
@@ -169,7 +182,7 @@ const analysisController = {
 
       return res.status(200).json({
         status: 'success',
-        data:   { metrics, complexity },
+        data:   { metrics, complexity, duplication },
       });
     } catch (error) {
       next(error);
@@ -199,6 +212,35 @@ const analysisController = {
       return res.status(200).json({
         status: 'success',
         data:   { complexity },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest/duplication
+   * Returns the most recent completed duplication_metrics row for a project.
+   */
+  getLatestDuplication: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const duplication = await analysisModel.getLatestDuplicationForProject(projectId);
+      if (!duplication) {
+        return res.status(404).json({
+          status:  'error',
+          message: 'No completed duplication analysis found for this project. Run an analysis first.',
+        });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data:   { duplication },
       });
     } catch (error) {
       next(error);

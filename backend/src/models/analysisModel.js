@@ -153,6 +153,55 @@ const analysisModel = {
   },
 
   /**
+   * Save duplication metrics for a completed run.
+   */
+  saveDuplicationMetrics: async (runId, projectId, duplication) => {
+    const result = await db.query(
+      `INSERT INTO duplication_metrics (
+         run_id, project_id,
+         duplicated_blocks, duplicated_loc, duplication_percentage,
+         duplicated_files_count, duplicated_files, duplicate_instances,
+         recommendations, analysis_tool
+       ) VALUES (
+         $1, $2,
+         $3, $4, $5,
+         $6, $7, $8,
+         $9, $10
+       )
+       RETURNING *`,
+      [
+        runId, projectId,
+        duplication.duplicated_blocks || 0,
+        duplication.duplicated_loc || 0,
+        duplication.duplication_percentage || 0.0,
+        duplication.duplicated_files_count || 0,
+        JSON.stringify(duplication.duplicated_files || []),
+        JSON.stringify(duplication.duplicate_instances || []),
+        JSON.stringify(duplication.recommendations || []),
+        duplication.analysis_tool || null,
+      ]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Get latest duplication metrics row for a project.
+   */
+  getLatestDuplicationForProject: async (projectId) => {
+    const result = await db.query(
+      `SELECT dp.*
+       FROM duplication_metrics dp
+       JOIN analysis_runs ar ON ar.id = dp.run_id
+       WHERE dp.project_id = $1
+         AND ar.status = 'completed'
+       ORDER BY dp.created_at DESC
+       LIMIT 1`,
+      [projectId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
    * Get all analysis runs for a project (newest first).
    */
   getRunsForProject: async (projectId) => {

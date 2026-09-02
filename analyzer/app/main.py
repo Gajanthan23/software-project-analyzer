@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException, status
 from app.schemas import AnalysisRequest, AnalysisResponse
 from app.analyzers.repository import analyze_repository
 from app.analyzers.complexity import analyze_complexity
+from app.analyzers.duplication import analyze_duplication
 
 app = FastAPI(
     title="Software Project Complexity & Quality Analyzer Engine",
@@ -67,8 +68,28 @@ def analyze(request: AnalysisRequest):
             detail=f"Complexity analysis failed: {str(exc)}"
         )
 
-    # 4. Build response — real values for repository, metrics, and complexity sections,
-    #    explicit not_implemented for all later phases (Rule 4: no fake data).
+    # 4. Phase 11 — Run real code duplication analysis
+    try:
+        duplication_data = analyze_duplication(
+            repo_path,
+            total_code_loc=metrics_data.get("code_loc", 0)
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Duplication analysis failed: {str(exc)}"
+        )
+
+    # Compile recommendations from analyzers
+    all_recommendations = []
+    for rec in duplication_data.get("recommendations", []):
+        all_recommendations.append({
+            "category": "duplication",
+            "type": "refactor",
+            "message": rec
+        })
+
+    # 5. Build response — real values for repository, metrics, complexity, duplication
     return AnalysisResponse(
         status="success",
         repository_path=os.path.abspath(repo_path),
@@ -112,9 +133,18 @@ def analyze(request: AnalysisRequest):
             "file_complexity":           complexity_data["file_complexity"],
             "analysis_tool":             complexity_data["analysis_tool"],
         },
+
+        # ── Phase 11: REAL values ────────────────────────────────────────
         duplication={
-            "status": "not_implemented",
-            "message": "Code duplication detection arrives in Phase 11."
+            "status":                 "ok",
+            "duplicated_blocks":      duplication_data["duplicated_blocks"],
+            "duplicated_loc":         duplication_data["duplicated_loc"],
+            "duplication_percentage": duplication_data["duplication_percentage"],
+            "duplicated_files_count": duplication_data["duplicated_files_count"],
+            "duplicated_files":       duplication_data["duplicated_files"],
+            "duplicate_instances":    duplication_data["duplicate_instances"],
+            "recommendations":        duplication_data["recommendations"],
+            "analysis_tool":          duplication_data["analysis_tool"],
         },
         testing={
             "status": "not_implemented",
@@ -144,7 +174,7 @@ def analyze(request: AnalysisRequest):
             "status": "not_implemented",
             "message": "Category & overall quality scoring engine arrives in Phase 18."
         },
-        recommendations=[],
+        recommendations=all_recommendations,
         prediction={
             "status": "not_implemented",
             "message": "ML maturity prediction model arrives in Phase 24."
