@@ -166,11 +166,22 @@ const analysisController = {
             logger.info(`Run ${run.id}: git_metrics row saved (id=${savedGit.id})`);
           }
 
-          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation, savedDependencies, savedSecurity, savedArchitecture, savedGit };
+          // 15. Save quality scores to DB (Phase 18)
+          let savedScores = null;
+          if (analyzerResponse.scores && analyzerResponse.scores.status === 'ok') {
+            savedScores = await analysisModel.saveQualityScores(
+              run.id,
+              projectId,
+              analyzerResponse.scores
+            );
+            logger.info(`Run ${run.id}: quality_scores row saved (id=${savedScores.id}, overall=${savedScores.overall_score})`);
+          }
+
+          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation, savedDependencies, savedSecurity, savedArchitecture, savedGit, savedScores };
         }
       );
 
-      // 15. Mark completed
+      // 16. Mark completed
       const completedRun = await analysisModel.updateRunStatus(run.id, 'completed');
 
       return res.status(200).json({
@@ -188,8 +199,8 @@ const analysisController = {
           security:      analysisResult.analyzerResponse.security,
           architecture:  analysisResult.analyzerResponse.architecture,
           git_history:   analysisResult.analyzerResponse.git_history,
-          // Placeholders for future phases — forward what the analyzer returned
           scores:        analysisResult.analyzerResponse.scores,
+          // Placeholders for future phases — forward what the analyzer returned
           prediction:    analysisResult.analyzerResponse.prediction,
           recommendations: analysisResult.analyzerResponse.recommendations,
         },
@@ -249,8 +260,9 @@ const analysisController = {
       const security = await analysisModel.getLatestSecurityForProject(projectId);
       const architecture = await analysisModel.getLatestArchitectureForProject(projectId);
       const git_history = await analysisModel.getLatestGitForProject(projectId);
+      const scores = await analysisModel.getLatestScoresForProject(projectId);
 
-      if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies && !security && !architecture && !git_history) {
+      if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies && !security && !architecture && !git_history && !scores) {
         return res.status(404).json({
           status:  'error',
           message: 'No completed analysis found for this project. Run an analysis first.',
@@ -259,7 +271,7 @@ const analysisController = {
 
       return res.status(200).json({
         status: 'success',
-        data:   { metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history },
+        data:   { metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history, scores },
       });
     } catch (error) {
       next(error);
@@ -492,6 +504,35 @@ const analysisController = {
       return res.status(200).json({
         status: 'success',
         data:   { git_history },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest/scores
+   * Returns the most recent completed quality_scores row for a project.
+   */
+  getLatestScores: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const scores = await analysisModel.getLatestScoresForProject(projectId);
+      if (!scores) {
+        return res.status(404).json({
+          status:  'error',
+          message: 'No completed quality scores analysis found for this project. Run an analysis first.',
+        });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data:   { scores },
       });
     } catch (error) {
       next(error);

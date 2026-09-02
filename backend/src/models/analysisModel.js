@@ -554,6 +554,63 @@ const analysisModel = {
   },
 
   /**
+   * Save quality scores for a completed run.
+   */
+  saveQualityScores: async (runId, projectId, scores) => {
+    const sub = scores.sub_scores || {};
+    const result = await db.query(
+      `INSERT INTO quality_scores (
+         run_id, project_id,
+         overall_score, score_band,
+         code_quality_score, maintainability_score, complexity_score,
+         architecture_score, testing_score, security_score, documentation_score,
+         sub_scores, score_weights, analysis_notes, analysis_tool
+       ) VALUES (
+         $1, $2,
+         $3, $4,
+         $5, $6, $7,
+         $8, $9, $10, $11,
+         $12, $13, $14, $15
+       )
+       RETURNING *`,
+      [
+        runId, projectId,
+        scores.overall_score || 0.0,
+        scores.score_band || 'Needs Improvement',
+        sub.code_quality || 0.0,
+        sub.maintainability || 0.0,
+        sub.complexity || 0.0,
+        sub.architecture || 0.0,
+        sub.testing || 0.0,
+        sub.security || 0.0,
+        sub.documentation || 0.0,
+        JSON.stringify(sub),
+        JSON.stringify(scores.score_weights || {}),
+        scores.analysis_notes || null,
+        scores.analysis_tool || 'Multi-Dimensional Software Quality Scoring Engine (Phase 18)',
+      ]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Get latest quality scores for a project.
+   */
+  getLatestScoresForProject: async (projectId) => {
+    const result = await db.query(
+      `SELECT qs.*
+       FROM quality_scores qs
+       JOIN analysis_runs ar ON ar.id = qs.run_id
+       WHERE qs.project_id = $1
+         AND ar.status = 'completed'
+       ORDER BY qs.created_at DESC
+       LIMIT 1`,
+      [projectId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
    * Get all analysis runs for a project (newest first).
    */
   getRunsForProject: async (projectId) => {

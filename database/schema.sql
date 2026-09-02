@@ -227,4 +227,26 @@ CREATE TABLE IF NOT EXISTS git_metrics (
     created_at                TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Quality Scores table (Phase 18) — stores overall & sub-category quality scores
+CREATE TABLE IF NOT EXISTS quality_scores (
+    id                     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    run_id                 UUID NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    project_id             UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    overall_score          NUMERIC(5, 2) NOT NULL,
+    score_band             VARCHAR(50) NOT NULL,
+    code_quality_score     NUMERIC(5, 2) DEFAULT 0.0,
+    maintainability_score  NUMERIC(5, 2) DEFAULT 0.0,
+    complexity_score       NUMERIC(5, 2) DEFAULT 0.0,
+    architecture_score     NUMERIC(5, 2) DEFAULT 0.0,
+    testing_score          NUMERIC(5, 2) DEFAULT 0.0,
+    security_score         NUMERIC(5, 2) DEFAULT 0.0,
+    documentation_score    NUMERIC(5, 2) DEFAULT 0.0,
+    sub_scores             JSONB DEFAULT '{}'::jsonb,
+    score_weights          JSONB DEFAULT '{}'::jsonb,
+    analysis_notes         TEXT,
+    analysis_tool          TEXT,
+    created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
 

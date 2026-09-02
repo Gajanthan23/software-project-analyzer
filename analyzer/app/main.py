@@ -19,6 +19,7 @@ from app.analyzers.dependencies import analyze_dependencies
 from app.analyzers.security import analyze_security
 from app.analyzers.architecture import analyze_architecture
 from app.analyzers.git_history import analyze_git_history
+from app.scoring import calculate_scores
 
 app = FastAPI(
     title="Software Project Complexity & Quality Analyzer Engine",
@@ -147,6 +148,25 @@ def analyze(request: AnalysisRequest):
             detail=f"Git history analysis failed: {str(exc)}"
         )
 
+    # 11. Phase 18 — Run real multi-dimensional quality scoring engine
+    try:
+        scores_data = calculate_scores(
+            metrics=metrics_data,
+            complexity=complexity_data,
+            duplication=duplication_data,
+            testing=testing_data,
+            documentation=documentation_data,
+            dependencies=dependencies_data,
+            security=security_data,
+            architecture=architecture_data,
+            git_history=git_history_data
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Scoring engine calculation failed: {str(exc)}"
+        )
+
     # Update dependency_count in metrics if parsed from manifests
     if dependencies_data.get("total_dependency_count", 0) > 0:
         metrics_data["dependency_count"] = dependencies_data["total_dependency_count"]
@@ -195,7 +215,7 @@ def analyze(request: AnalysisRequest):
             "message": rec
         })
 
-    # 11. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history
+    # 12. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history, scores
     return AnalysisResponse(
         status="success",
         repository_path=os.path.abspath(repo_path),
@@ -352,11 +372,18 @@ def analyze(request: AnalysisRequest):
             "analysis_tool":              git_history_data["analysis_tool"],
         },
 
-        # ── Phases 18–24: still not_implemented (Rule 4) ─────────────────
+        # ── Phase 18: REAL values ────────────────────────────────────────
         scores={
-            "status": "not_implemented",
-            "message": "Category & overall quality scoring engine arrives in Phase 18."
+            "status":         "ok",
+            "overall_score":  scores_data["overall_score"],
+            "score_band":     scores_data["score_band"],
+            "sub_scores":     scores_data["sub_scores"],
+            "score_weights":  scores_data["score_weights"],
+            "analysis_notes": scores_data["analysis_notes"],
+            "analysis_tool":  scores_data["analysis_tool"],
         },
+
+        # ── Phases 19–24: still not_implemented (Rule 4) ─────────────────
         recommendations=all_recommendations,
         prediction={
             "status": "not_implemented",
