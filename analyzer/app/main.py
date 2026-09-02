@@ -4,7 +4,7 @@ app/main.py
 FastAPI Application Entry Point for the Python Analysis Microservice.
 Exposes:
   - GET  /health
-  - POST /analyze  (Phase 8: contract; Phase 9: metrics; Phase 10: complexity; Phase 11: duplication; Phase 12: testing)
+  - POST /analyze  (Phase 8: contract; Phase 9: metrics; Phase 10: complexity; Phase 11: duplication; Phase 12: testing; Phase 13: documentation)
 """
 
 import os
@@ -14,6 +14,7 @@ from app.analyzers.repository import analyze_repository
 from app.analyzers.complexity import analyze_complexity
 from app.analyzers.duplication import analyze_duplication
 from app.analyzers.testing import analyze_testing
+from app.analyzers.documentation import analyze_documentation
 
 app = FastAPI(
     title="Software Project Complexity & Quality Analyzer Engine",
@@ -90,6 +91,19 @@ def analyze(request: AnalysisRequest):
             detail=f"Testing analysis failed: {str(exc)}"
         )
 
+    # 6. Phase 13 — Run real documentation completeness analysis (HEURISTIC)
+    try:
+        documentation_data = analyze_documentation(
+            repo_path,
+            code_loc=metrics_data.get("code_loc", 0),
+            comment_loc=metrics_data.get("comment_loc", 0)
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Documentation analysis failed: {str(exc)}"
+        )
+
     # Compile recommendations from analyzers
     all_recommendations = []
     for rec in duplication_data.get("recommendations", []):
@@ -106,7 +120,14 @@ def analyze(request: AnalysisRequest):
             "message": "No test suite detected. Add unit and integration tests (e.g. Jest, PyTest) to ensure software reliability."
         })
 
-    # 6. Build response — real values for repository, metrics, complexity, duplication, testing
+    for rec in documentation_data.get("recommendations", []):
+        all_recommendations.append({
+            "category": "documentation",
+            "type": "quality",
+            "message": rec
+        })
+
+    # 7. Build response — real values for repository, metrics, complexity, duplication, testing, documentation
     return AnalysisResponse(
         status="success",
         repository_path=os.path.abspath(repo_path),
@@ -184,11 +205,27 @@ def analyze(request: AnalysisRequest):
             "analysis_tool":              testing_data["analysis_tool"],
         },
 
-        # ── Phases 13–24: still not_implemented (Rule 4) ─────────────────
+        # ── Phase 13: REAL values (HEURISTIC) ────────────────────────────
         documentation={
-            "status": "not_implemented",
-            "message": "Documentation completeness scoring arrives in Phase 13."
+            "status":                     "ok",
+            "classification":             documentation_data["classification"],
+            "documentation_score":        documentation_data["documentation_score"],
+            "score_breakdown":            documentation_data["score_breakdown"],
+            "has_readme":                 documentation_data["has_readme"],
+            "readme_file":                documentation_data["readme_file"],
+            "readme_size_bytes":          documentation_data["readme_size_bytes"],
+            "readme_sections":            documentation_data["readme_sections"],
+            "has_docs_dir":               documentation_data["has_docs_dir"],
+            "docs_files_count":           documentation_data["docs_files_count"],
+            "docs_sample_files":          documentation_data["docs_sample_files"],
+            "governance_files":           documentation_data["governance_files"],
+            "comment_density_pct":        documentation_data["comment_density_pct"],
+            "recommendations":            documentation_data["recommendations"],
+            "analysis_notes":             documentation_data["analysis_notes"],
+            "analysis_tool":              documentation_data["analysis_tool"],
         },
+
+        # ── Phases 14–24: still not_implemented (Rule 4) ─────────────────
         dependencies={
             "status": "not_implemented",
             "message": "Dependency file parsing arrives in Phase 14."

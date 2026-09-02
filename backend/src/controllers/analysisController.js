@@ -106,11 +106,22 @@ const analysisController = {
             logger.info(`Run ${run.id}: testing_metrics row saved (id=${savedTesting.id})`);
           }
 
-          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting };
+          // 10. Save documentation metrics to DB (Phase 13)
+          let savedDocumentation = null;
+          if (analyzerResponse.documentation && analyzerResponse.documentation.status === 'ok') {
+            savedDocumentation = await analysisModel.saveDocumentationMetrics(
+              run.id,
+              projectId,
+              analyzerResponse.documentation
+            );
+            logger.info(`Run ${run.id}: documentation_metrics row saved (id=${savedDocumentation.id})`);
+          }
+
+          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation };
         }
       );
 
-      // 10. Mark completed
+      // 11. Mark completed
       const completedRun = await analysisModel.updateRunStatus(run.id, 'completed');
 
       return res.status(200).json({
@@ -123,8 +134,8 @@ const analysisController = {
           complexity:    analysisResult.analyzerResponse.complexity,
           duplication:   analysisResult.analyzerResponse.duplication,
           testing:       analysisResult.analyzerResponse.testing,
-          // Placeholders for future phases — forward what the analyzer returned
           documentation: analysisResult.analyzerResponse.documentation,
+          // Placeholders for future phases — forward what the analyzer returned
           dependencies:  analysisResult.analyzerResponse.dependencies,
           security:      analysisResult.analyzerResponse.security,
           architecture:  analysisResult.analyzerResponse.architecture,
@@ -184,8 +195,9 @@ const analysisController = {
       const complexity = await analysisModel.getLatestComplexityForProject(projectId);
       const duplication = await analysisModel.getLatestDuplicationForProject(projectId);
       const testing = await analysisModel.getLatestTestingForProject(projectId);
+      const documentation = await analysisModel.getLatestDocumentationForProject(projectId);
 
-      if (!metrics && !complexity && !duplication && !testing) {
+      if (!metrics && !complexity && !duplication && !testing && !documentation) {
         return res.status(404).json({
           status:  'error',
           message: 'No completed analysis found for this project. Run an analysis first.',
@@ -194,7 +206,7 @@ const analysisController = {
 
       return res.status(200).json({
         status: 'success',
-        data:   { metrics, complexity, duplication, testing },
+        data:   { metrics, complexity, duplication, testing, documentation },
       });
     } catch (error) {
       next(error);
@@ -282,6 +294,35 @@ const analysisController = {
       return res.status(200).json({
         status: 'success',
         data:   { testing },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest/documentation
+   * Returns the most recent completed documentation_metrics row for a project.
+   */
+  getLatestDocumentation: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const documentation = await analysisModel.getLatestDocumentationForProject(projectId);
+      if (!documentation) {
+        return res.status(404).json({
+          status:  'error',
+          message: 'No completed documentation analysis found for this project. Run an analysis first.',
+        });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data:   { documentation },
       });
     } catch (error) {
       next(error);

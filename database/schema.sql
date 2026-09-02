@@ -128,5 +128,29 @@ CREATE TABLE IF NOT EXISTS testing_metrics (
     created_at                TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Documentation Metrics table (Phase 13) — stores heuristic documentation scores and structural findings
+CREATE TABLE IF NOT EXISTS documentation_metrics (
+    id                        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    run_id                    UUID NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    project_id                UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    classification            VARCHAR(50) DEFAULT 'HEURISTIC',
+    documentation_score       NUMERIC(5, 2) DEFAULT 0.0,
+    score_breakdown           JSONB DEFAULT '{}'::jsonb,
+    has_readme                BOOLEAN DEFAULT false,
+    readme_file               VARCHAR(255),
+    readme_size_bytes         INT DEFAULT 0,
+    readme_sections           JSONB DEFAULT '{}'::jsonb,
+    has_docs_dir              BOOLEAN DEFAULT false,
+    docs_files_count          INT DEFAULT 0,
+    docs_sample_files         JSONB DEFAULT '[]'::jsonb,
+    governance_files          JSONB DEFAULT '{}'::jsonb,
+    comment_density_pct       NUMERIC(5, 2) DEFAULT 0.0,
+    recommendations           JSONB DEFAULT '[]'::jsonb,
+    analysis_notes            TEXT,
+    analysis_tool             TEXT,
+    created_at                TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
 
 

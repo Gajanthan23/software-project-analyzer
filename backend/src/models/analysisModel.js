@@ -264,6 +264,66 @@ const analysisModel = {
   },
 
   /**
+   * Save documentation metrics for a completed run.
+   */
+  saveDocumentationMetrics: async (runId, projectId, doc) => {
+    const result = await db.query(
+      `INSERT INTO documentation_metrics (
+         run_id, project_id,
+         classification, documentation_score, score_breakdown,
+         has_readme, readme_file, readme_size_bytes, readme_sections,
+         has_docs_dir, docs_files_count, docs_sample_files,
+         governance_files, comment_density_pct, recommendations,
+         analysis_notes, analysis_tool
+       ) VALUES (
+         $1, $2,
+         $3, $4, $5,
+         $6, $7, $8, $9,
+         $10, $11, $12,
+         $13, $14, $15,
+         $16, $17
+       )
+       RETURNING *`,
+      [
+        runId, projectId,
+        doc.classification || 'HEURISTIC',
+        doc.documentation_score || 0.0,
+        JSON.stringify(doc.score_breakdown || {}),
+        doc.has_readme || false,
+        doc.readme_file || null,
+        doc.readme_size_bytes || 0,
+        JSON.stringify(doc.readme_sections || {}),
+        doc.has_docs_dir || false,
+        doc.docs_files_count || 0,
+        JSON.stringify(doc.docs_sample_files || []),
+        JSON.stringify(doc.governance_files || {}),
+        doc.comment_density_pct || 0.0,
+        JSON.stringify(doc.recommendations || []),
+        doc.analysis_notes || null,
+        doc.analysis_tool || null,
+      ]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Get latest documentation metrics row for a project.
+   */
+  getLatestDocumentationForProject: async (projectId) => {
+    const result = await db.query(
+      `SELECT dm.*
+       FROM documentation_metrics dm
+       JOIN analysis_runs ar ON ar.id = dm.run_id
+       WHERE dm.project_id = $1
+         AND ar.status = 'completed'
+       ORDER BY dm.created_at DESC
+       LIMIT 1`,
+      [projectId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
    * Get all analysis runs for a project (newest first).
    */
   getRunsForProject: async (projectId) => {
