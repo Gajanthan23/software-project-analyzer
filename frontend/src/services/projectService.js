@@ -43,7 +43,7 @@ export const projectService = {
    * Trigger full analysis run for a project (Phases 9–19).
    */
   triggerAnalysis: async (id) => {
-    const response = await api.post(`/projects/${id}/analyze`);
+    const response = await api.post(`/projects/${id}/analyze`, {}, { timeout: 300_000 });
     return response.data;
   },
 

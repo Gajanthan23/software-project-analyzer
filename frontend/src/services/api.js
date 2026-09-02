@@ -15,7 +15,7 @@ import axios from 'axios'
 // ─── Create base instance ──────────────────────────────────────────────────
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
-  timeout: 30_000,          // 30 s — analyses can take a while (Phase 8+)
+  timeout: 300_000,         // 300 s (5 minutes) — full repo cloning & static analysis can take >30s on slower networks
   headers: {
     'Content-Type': 'application/json',
   },

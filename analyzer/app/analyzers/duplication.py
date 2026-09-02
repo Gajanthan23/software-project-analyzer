@@ -143,8 +143,14 @@ def analyze_duplication(repo_path: str, total_code_loc: int = 0) -> Dict[str, An
         if len(occurrences) < 2:
             continue
 
+        # Cap occurrences to top 30 per block hash to prevent O(N^2) combinatorial explosion on repetitive lines
+        if len(occurrences) > 30:
+            occurrences = occurrences[:30]
+
         for i in range(len(occurrences)):
             for j in range(i + 1, len(occurrences)):
+                if len(raw_clones) >= 1000:
+                    break
                 file_a, idx_a = occurrences[i]
                 file_b, idx_b = occurrences[j]
 

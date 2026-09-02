@@ -59,7 +59,8 @@ export default function ProjectOverviewPage() {
       await loadData();
     } catch (err) {
       setAnalysisStatus('failed');
-      setError(err.response?.data?.message || 'Analysis failed. Please check repository access.');
+      const msg = err.response?.data?.message || err.message || 'Analysis failed. Please check repository access.';
+      setError(msg);
     } finally {
       setAnalyzing(false);
     }
