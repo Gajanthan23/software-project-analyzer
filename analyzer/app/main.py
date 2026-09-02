@@ -18,6 +18,7 @@ from app.analyzers.documentation import analyze_documentation
 from app.analyzers.dependencies import analyze_dependencies
 from app.analyzers.security import analyze_security
 from app.analyzers.architecture import analyze_architecture
+from app.analyzers.git_history import analyze_git_history
 
 app = FastAPI(
     title="Software Project Complexity & Quality Analyzer Engine",
@@ -137,6 +138,15 @@ def analyze(request: AnalysisRequest):
             detail=f"Architecture analysis failed: {str(exc)}"
         )
 
+    # 10. Phase 17 — Run real Git history & contributor commit log analysis
+    try:
+        git_history_data = analyze_git_history(repo_path)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Git history analysis failed: {str(exc)}"
+        )
+
     # Update dependency_count in metrics if parsed from manifests
     if dependencies_data.get("total_dependency_count", 0) > 0:
         metrics_data["dependency_count"] = dependencies_data["total_dependency_count"]
@@ -185,7 +195,7 @@ def analyze(request: AnalysisRequest):
             "message": rec
         })
 
-    # 10. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies, security, architecture
+    # 11. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history
     return AnalysisResponse(
         status="success",
         repository_path=os.path.abspath(repo_path),
@@ -324,11 +334,25 @@ def analyze(request: AnalysisRequest):
             "analysis_tool":              architecture_data["analysis_tool"],
         },
 
-        # ── Phases 17–24: still not_implemented (Rule 4) ─────────────────
+        # ── Phase 17: REAL values ────────────────────────────────────────
         git_history={
-            "status": "not_implemented",
-            "message": "Git commit & contributor statistics arrive in Phase 17."
+            "status":                     "ok",
+            "is_git_repository":          git_history_data["is_git_repository"],
+            "total_commits":              git_history_data["total_commits"],
+            "contributor_count":          git_history_data["contributor_count"],
+            "repository_age_days":        git_history_data["repository_age_days"],
+            "recent_commits_30d":         git_history_data["recent_commits_30d"],
+            "recent_commits_90d":         git_history_data["recent_commits_90d"],
+            "branch_count":               git_history_data["branch_count"],
+            "commit_frequency_per_week":  git_history_data["commit_frequency_per_week"],
+            "top_contributors":          git_history_data["top_contributors"],
+            "first_commit_date":          git_history_data["first_commit_date"],
+            "latest_commit_date":         git_history_data["latest_commit_date"],
+            "analysis_notes":             git_history_data["analysis_notes"],
+            "analysis_tool":              git_history_data["analysis_tool"],
         },
+
+        # ── Phases 18–24: still not_implemented (Rule 4) ─────────────────
         scores={
             "status": "not_implemented",
             "message": "Category & overall quality scoring engine arrives in Phase 18."

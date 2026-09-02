@@ -150,11 +150,27 @@ const analysisController = {
             logger.info(`Run ${run.id}: architecture_metrics row saved (id=${savedArchitecture.id})`);
           }
 
-          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation, savedDependencies, savedSecurity, savedArchitecture };
+          // 14. Save git metrics to DB (Phase 17)
+          let savedGit = null;
+          if (analyzerResponse.git_history && analyzerResponse.git_history.status === 'ok') {
+            const githubStats = {
+              open_issues_count: project.open_issues_count || 0,
+              open_prs_count: project.open_prs_count || 0,
+            };
+            savedGit = await analysisModel.saveGitMetrics(
+              run.id,
+              projectId,
+              analyzerResponse.git_history,
+              githubStats
+            );
+            logger.info(`Run ${run.id}: git_metrics row saved (id=${savedGit.id})`);
+          }
+
+          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation, savedDependencies, savedSecurity, savedArchitecture, savedGit };
         }
       );
 
-      // 14. Mark completed
+      // 15. Mark completed
       const completedRun = await analysisModel.updateRunStatus(run.id, 'completed');
 
       return res.status(200).json({
@@ -171,8 +187,8 @@ const analysisController = {
           dependencies:  analysisResult.analyzerResponse.dependencies,
           security:      analysisResult.analyzerResponse.security,
           architecture:  analysisResult.analyzerResponse.architecture,
-          // Placeholders for future phases — forward what the analyzer returned
           git_history:   analysisResult.analyzerResponse.git_history,
+          // Placeholders for future phases — forward what the analyzer returned
           scores:        analysisResult.analyzerResponse.scores,
           prediction:    analysisResult.analyzerResponse.prediction,
           recommendations: analysisResult.analyzerResponse.recommendations,
@@ -232,8 +248,9 @@ const analysisController = {
       const dependencies = await analysisModel.getLatestDependencyForProject(projectId);
       const security = await analysisModel.getLatestSecurityForProject(projectId);
       const architecture = await analysisModel.getLatestArchitectureForProject(projectId);
+      const git_history = await analysisModel.getLatestGitForProject(projectId);
 
-      if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies && !security && !architecture) {
+      if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies && !security && !architecture && !git_history) {
         return res.status(404).json({
           status:  'error',
           message: 'No completed analysis found for this project. Run an analysis first.',
@@ -242,7 +259,7 @@ const analysisController = {
 
       return res.status(200).json({
         status: 'success',
-        data:   { metrics, complexity, duplication, testing, documentation, dependencies, security, architecture },
+        data:   { metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history },
       });
     } catch (error) {
       next(error);
@@ -446,6 +463,35 @@ const analysisController = {
       return res.status(200).json({
         status: 'success',
         data:   { architecture },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest/git-history
+   * Returns the most recent completed git_metrics row for a project.
+   */
+  getLatestGit: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const git_history = await analysisModel.getLatestGitForProject(projectId);
+      if (!git_history) {
+        return res.status(404).json({
+          status:  'error',
+          message: 'No completed git history analysis found for this project. Run an analysis first.',
+        });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data:   { git_history },
       });
     } catch (error) {
       next(error);

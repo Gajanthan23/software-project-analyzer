@@ -204,3 +204,27 @@ CREATE TABLE IF NOT EXISTS architecture_metrics (
     created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Git Metrics table (Phase 17) — stores commit log & contributor activity metrics
+CREATE TABLE IF NOT EXISTS git_metrics (
+    id                        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    run_id                    UUID NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    project_id                UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    is_git_repository         BOOLEAN DEFAULT TRUE,
+    total_commits             INT DEFAULT 0,
+    contributor_count         INT DEFAULT 0,
+    repository_age_days       INT DEFAULT 0,
+    recent_commits_30d        INT DEFAULT 0,
+    recent_commits_90d        INT DEFAULT 0,
+    branch_count              INT DEFAULT 1,
+    commit_frequency_per_week NUMERIC(8, 2) DEFAULT 0.0,
+    top_contributors          JSONB DEFAULT '[]'::jsonb,
+    first_commit_date         TIMESTAMP WITH TIME ZONE,
+    latest_commit_date        TIMESTAMP WITH TIME ZONE,
+    open_issues_count         INT DEFAULT 0,
+    open_prs_count            INT DEFAULT 0,
+    analysis_notes            TEXT,
+    analysis_tool             TEXT,
+    created_at                TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+

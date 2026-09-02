@@ -494,6 +494,66 @@ const analysisModel = {
   },
 
   /**
+   * Save git metrics for a completed run.
+   */
+  saveGitMetrics: async (runId, projectId, git, githubStats = {}) => {
+    const result = await db.query(
+      `INSERT INTO git_metrics (
+         run_id, project_id,
+         is_git_repository, total_commits, contributor_count,
+         repository_age_days, recent_commits_30d, recent_commits_90d,
+         branch_count, commit_frequency_per_week, top_contributors,
+         first_commit_date, latest_commit_date, open_issues_count, open_prs_count,
+         analysis_notes, analysis_tool
+       ) VALUES (
+         $1, $2,
+         $3, $4, $5,
+         $6, $7, $8,
+         $9, $10, $11,
+         $12, $13, $14, $15,
+         $16, $17
+       )
+       RETURNING *`,
+      [
+        runId, projectId,
+        git.is_git_repository !== false,
+        git.total_commits || 0,
+        git.contributor_count || 0,
+        git.repository_age_days || 0,
+        git.recent_commits_30d || 0,
+        git.recent_commits_90d || 0,
+        git.branch_count || 1,
+        git.commit_frequency_per_week || 0.0,
+        JSON.stringify(git.top_contributors || []),
+        git.first_commit_date || null,
+        git.latest_commit_date || null,
+        githubStats.open_issues_count || 0,
+        githubStats.open_prs_count || 0,
+        git.analysis_notes || null,
+        git.analysis_tool || 'Git Commit Log Scanner (Phase 17 Engine)',
+      ]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Get latest git metrics for a project.
+   */
+  getLatestGitForProject: async (projectId) => {
+    const result = await db.query(
+      `SELECT gm.*
+       FROM git_metrics gm
+       JOIN analysis_runs ar ON ar.id = gm.run_id
+       WHERE gm.project_id = $1
+         AND ar.status = 'completed'
+       ORDER BY gm.created_at DESC
+       LIMIT 1`,
+      [projectId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
    * Get all analysis runs for a project (newest first).
    */
   getRunsForProject: async (projectId) => {
