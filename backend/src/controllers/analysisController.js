@@ -177,11 +177,22 @@ const analysisController = {
             logger.info(`Run ${run.id}: quality_scores row saved (id=${savedScores.id}, overall=${savedScores.overall_score})`);
           }
 
-          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation, savedDependencies, savedSecurity, savedArchitecture, savedGit, savedScores };
+          // 16. Save recommendations to DB (Phase 19)
+          let savedRecommendations = [];
+          if (Array.isArray(analyzerResponse.recommendations)) {
+            savedRecommendations = await analysisModel.saveRecommendations(
+              run.id,
+              projectId,
+              analyzerResponse.recommendations
+            );
+            logger.info(`Run ${run.id}: ${savedRecommendations.length} recommendations rows saved`);
+          }
+
+          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation, savedDependencies, savedSecurity, savedArchitecture, savedGit, savedScores, savedRecommendations };
         }
       );
 
-      // 16. Mark completed
+      // 17. Mark completed
       const completedRun = await analysisModel.updateRunStatus(run.id, 'completed');
 
       return res.status(200).json({
@@ -189,20 +200,20 @@ const analysisController = {
         message: 'Repository analysis completed successfully.',
         data: {
           run: completedRun,
-          repository:    analysisResult.analyzerResponse.repository,
-          metrics:       analysisResult.analyzerResponse.metrics,
-          complexity:    analysisResult.analyzerResponse.complexity,
-          duplication:   analysisResult.analyzerResponse.duplication,
-          testing:       analysisResult.analyzerResponse.testing,
-          documentation: analysisResult.analyzerResponse.documentation,
-          dependencies:  analysisResult.analyzerResponse.dependencies,
-          security:      analysisResult.analyzerResponse.security,
-          architecture:  analysisResult.analyzerResponse.architecture,
-          git_history:   analysisResult.analyzerResponse.git_history,
-          scores:        analysisResult.analyzerResponse.scores,
-          // Placeholders for future phases — forward what the analyzer returned
-          prediction:    analysisResult.analyzerResponse.prediction,
+          repository:     analysisResult.analyzerResponse.repository,
+          metrics:        analysisResult.analyzerResponse.metrics,
+          complexity:     analysisResult.analyzerResponse.complexity,
+          duplication:    analysisResult.analyzerResponse.duplication,
+          testing:        analysisResult.analyzerResponse.testing,
+          documentation:  analysisResult.analyzerResponse.documentation,
+          dependencies:   analysisResult.analyzerResponse.dependencies,
+          security:       analysisResult.analyzerResponse.security,
+          architecture:   analysisResult.analyzerResponse.architecture,
+          git_history:    analysisResult.analyzerResponse.git_history,
+          scores:         analysisResult.analyzerResponse.scores,
           recommendations: analysisResult.analyzerResponse.recommendations,
+          // Placeholders for future phases — forward what the analyzer returned
+          prediction:     analysisResult.analyzerResponse.prediction,
         },
       });
 
@@ -261,8 +272,9 @@ const analysisController = {
       const architecture = await analysisModel.getLatestArchitectureForProject(projectId);
       const git_history = await analysisModel.getLatestGitForProject(projectId);
       const scores = await analysisModel.getLatestScoresForProject(projectId);
+      const recommendations = await analysisModel.getLatestRecommendationsForProject(projectId);
 
-      if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies && !security && !architecture && !git_history && !scores) {
+      if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies && !security && !architecture && !git_history && !scores && !recommendations.length) {
         return res.status(404).json({
           status:  'error',
           message: 'No completed analysis found for this project. Run an analysis first.',
@@ -271,7 +283,7 @@ const analysisController = {
 
       return res.status(200).json({
         status: 'success',
-        data:   { metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history, scores },
+        data:   { metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history, scores, recommendations },
       });
     } catch (error) {
       next(error);
@@ -533,6 +545,29 @@ const analysisController = {
       return res.status(200).json({
         status: 'success',
         data:   { scores },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest/recommendations
+   * Returns the most recent completed recommendations rows for a project.
+   */
+  getLatestRecommendations: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const recommendations = await analysisModel.getLatestRecommendationsForProject(projectId);
+      return res.status(200).json({
+        status: 'success',
+        results: recommendations.length,
+        data:   { recommendations },
       });
     } catch (error) {
       next(error);

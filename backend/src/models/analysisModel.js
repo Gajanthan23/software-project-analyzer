@@ -611,6 +611,54 @@ const analysisModel = {
   },
 
   /**
+   * Save recommendations for a completed run.
+   */
+  saveRecommendations: async (runId, projectId, recommendations = []) => {
+    const savedRows = [];
+    for (const rec of recommendations) {
+      const result = await db.query(
+        `INSERT INTO recommendations (
+           run_id, project_id,
+           priority, category, problem, explanation, suggested_action,
+           analysis_tool
+         ) VALUES (
+           $1, $2,
+           $3, $4, $5, $6, $7,
+           $8
+         )
+         RETURNING *`,
+        [
+          runId, projectId,
+          rec.priority || 'MEDIUM',
+          rec.category || 'General',
+          rec.problem || 'Code quality remediation recommendation',
+          rec.explanation || '',
+          rec.suggested_action || '',
+          'Actionable Software Quality Recommendation Engine (Phase 19)',
+        ]
+      );
+      savedRows.push(result.rows[0]);
+    }
+    return savedRows;
+  },
+
+  /**
+   * Get latest recommendations for a project.
+   */
+  getLatestRecommendationsForProject: async (projectId) => {
+    const result = await db.query(
+      `SELECT r.*
+       FROM recommendations r
+       JOIN analysis_runs ar ON ar.id = r.run_id
+       WHERE r.project_id = $1
+         AND ar.status = 'completed'
+       ORDER BY CASE r.priority WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END, r.created_at DESC`,
+      [projectId]
+    );
+    return result.rows;
+  },
+
+  /**
    * Get all analysis runs for a project (newest first).
    */
   getRunsForProject: async (projectId) => {

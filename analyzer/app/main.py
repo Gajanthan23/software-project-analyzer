@@ -19,7 +19,7 @@ from app.analyzers.dependencies import analyze_dependencies
 from app.analyzers.security import analyze_security
 from app.analyzers.architecture import analyze_architecture
 from app.analyzers.git_history import analyze_git_history
-from app.scoring import calculate_scores
+from app.scoring import calculate_scores, generate_recommendations
 
 app = FastAPI(
     title="Software Project Complexity & Quality Analyzer Engine",
@@ -167,55 +167,31 @@ def analyze(request: AnalysisRequest):
             detail=f"Scoring engine calculation failed: {str(exc)}"
         )
 
+    # 12. Phase 19 — Run real actionable recommendation engine
+    try:
+        recommendations_data = generate_recommendations(
+            metrics=metrics_data,
+            complexity=complexity_data,
+            duplication=duplication_data,
+            testing=testing_data,
+            documentation=documentation_data,
+            dependencies=dependencies_data,
+            security=security_data,
+            architecture=architecture_data,
+            git_history=git_history_data,
+            scores=scores_data
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Recommendation engine failed: {str(exc)}"
+        )
+
     # Update dependency_count in metrics if parsed from manifests
     if dependencies_data.get("total_dependency_count", 0) > 0:
         metrics_data["dependency_count"] = dependencies_data["total_dependency_count"]
 
-    # Compile recommendations from analyzers
-    all_recommendations = []
-    for rec in duplication_data.get("recommendations", []):
-        all_recommendations.append({
-            "category": "duplication",
-            "type": "refactor",
-            "message": rec
-        })
-
-    if not testing_data.get("has_tests", False):
-        all_recommendations.append({
-            "category": "testing",
-            "type": "quality",
-            "message": "No test suite detected. Add unit and integration tests (e.g. Jest, PyTest) to ensure software reliability."
-        })
-
-    for rec in documentation_data.get("recommendations", []):
-        all_recommendations.append({
-            "category": "documentation",
-            "type": "quality",
-            "message": rec
-        })
-
-    for rec in dependencies_data.get("recommendations", []):
-        all_recommendations.append({
-            "category": "dependencies",
-            "type": "maintenance",
-            "message": rec
-        })
-
-    for rec in security_data.get("recommendations", []):
-        all_recommendations.append({
-            "category": "security",
-            "type": "security",
-            "message": rec
-        })
-
-    for rec in architecture_data.get("recommendations", []):
-        all_recommendations.append({
-            "category": "architecture",
-            "type": "refactor",
-            "message": rec
-        })
-
-    # 12. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history, scores
+    # 13. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history, scores, recommendations
     return AnalysisResponse(
         status="success",
         repository_path=os.path.abspath(repo_path),
@@ -383,8 +359,10 @@ def analyze(request: AnalysisRequest):
             "analysis_tool":  scores_data["analysis_tool"],
         },
 
-        # ── Phases 19–24: still not_implemented (Rule 4) ─────────────────
-        recommendations=all_recommendations,
+        # ── Phase 19: REAL values ────────────────────────────────────────
+        recommendations=recommendations_data,
+
+        # ── Phases 20–24: still not_implemented (Rule 4) ─────────────────
         prediction={
             "status": "not_implemented",
             "message": "ML maturity prediction model arrives in Phase 24."

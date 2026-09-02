@@ -248,5 +248,20 @@ CREATE TABLE IF NOT EXISTS quality_scores (
     created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Recommendations table (Phase 19) — stores actionable remediation suggestions
+CREATE TABLE IF NOT EXISTS recommendations (
+    id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    run_id           UUID NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    project_id       UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    priority         VARCHAR(20) NOT NULL,
+    category         VARCHAR(50) NOT NULL,
+    problem          TEXT NOT NULL,
+    explanation      TEXT NOT NULL,
+    suggested_action TEXT NOT NULL,
+    analysis_tool    TEXT,
+    created_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
 
 
