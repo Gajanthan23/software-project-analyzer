@@ -153,6 +153,22 @@ const analysisController = {
           // 14. Save git metrics to DB (Phase 17)
           let savedGit = null;
           if (analyzerResponse.git_history && analyzerResponse.git_history.status === 'ok') {
+            const gitData = { ...analyzerResponse.git_history };
+
+            // Enrich with GitHub REST API metadata for full repository fidelity
+            if (project.api_contributors && project.api_contributors.length > 0 && (!gitData.top_contributors || gitData.top_contributors.length <= 1)) {
+              gitData.top_contributors = project.api_contributors;
+              gitData.contributor_count = Math.max(gitData.contributor_count || 0, project.api_contributors.length);
+            }
+
+            if (project.created_at && (!gitData.first_commit_date || gitData.is_shallow_clone)) {
+              gitData.first_commit_date = project.created_at;
+              const pushedDate = project.pushed_at || project.updated_at || new Date().toISOString();
+              gitData.latest_commit_date = pushedDate;
+              const ageDays = Math.max(1, Math.floor((new Date(pushedDate) - new Date(project.created_at)) / (1000 * 60 * 60 * 24)));
+              gitData.repository_age_days = ageDays;
+            }
+
             const githubStats = {
               open_issues_count: project.open_issues_count || 0,
               open_prs_count: project.open_prs_count || 0,
@@ -160,7 +176,7 @@ const analysisController = {
             savedGit = await analysisModel.saveGitMetrics(
               run.id,
               projectId,
-              analyzerResponse.git_history,
+              gitData,
               githubStats
             );
             logger.info(`Run ${run.id}: git_metrics row saved (id=${savedGit.id})`);

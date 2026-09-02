@@ -117,6 +117,42 @@ const githubService = {
       logger.warn(`No README found or error fetching README for ${owner}/${name}`, err);
     }
 
+    // 5. Fetch Open PRs Count
+    let open_prs_count = 0;
+    try {
+      const prsRes = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${name}/pulls?state=open&per_page=1`, { headers });
+      if (prsRes.ok) {
+        const linkHeader = prsRes.headers.get('link');
+        if (linkHeader) {
+          const match = linkHeader.match(/page=(\d+)>; rel="last"/);
+          if (match) open_prs_count = parseInt(match[1], 10);
+          else {
+            const prs = await prsRes.json();
+            open_prs_count = Array.isArray(prs) ? prs.length : 0;
+          }
+        } else {
+          const prs = await prsRes.json();
+          open_prs_count = Array.isArray(prs) ? prs.length : 0;
+        }
+      }
+    } catch (err) {
+      logger.warn(`Failed to fetch open PRs for ${owner}/${name}`, err);
+    }
+
+    // 6. Fetch Top Contributors
+    let api_contributors = [];
+    try {
+      const contribRes = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${name}/contributors?per_page=10`, { headers });
+      if (contribRes.ok) {
+        const contribData = await contribRes.json();
+        if (Array.isArray(contribData)) {
+          api_contributors = contribData.map(c => ({ author: c.login, commits: c.contributions }));
+        }
+      }
+    } catch (err) {
+      logger.warn(`Failed to fetch contributors for ${owner}/${name}`, err);
+    }
+
     return {
       repo_url: repoData.html_url,
       owner: repoData.owner.login,
@@ -126,6 +162,8 @@ const githubService = {
       stars_count: repoData.stargazers_count || 0,
       forks_count: repoData.forks_count || 0,
       open_issues_count: repoData.open_issues_count || 0,
+      open_prs_count,
+      api_contributors,
       is_archived: repoData.archived || false,
       languages,
       file_structure: contents,

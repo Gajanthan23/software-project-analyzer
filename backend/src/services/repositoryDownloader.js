@@ -87,7 +87,7 @@ const repositoryDownloader = {
       // Use execFile instead of exec to prevent shell injection attacks
       await execFileAsync('git', [
         'clone',
-        '--depth', '1',
+        '--depth', '100',
         '--single-branch',
         repoUrl,
         workspacePath
