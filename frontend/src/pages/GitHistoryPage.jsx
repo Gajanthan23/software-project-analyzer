@@ -120,17 +120,25 @@ export default function GitHistoryPage() {
             <table className="w-full text-left text-xs text-slate-300">
               <thead className="border-b border-[#1e1e3a] bg-[#0a0a16] text-slate-500 uppercase tracking-wider">
                 <tr>
-                  <th className="py-3 px-4">Contributor Name / Email</th>
+                  <th className="py-3 px-4">Contributor Username</th>
                   <th className="py-3 px-4 text-right">Commit Count</th>
                   <th className="py-3 px-4 text-right">Commit Share</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1e1e3a]">
                 {contributors.map((c, i) => {
+                  let name = c.author || c.name || c.login || 'Anonymous';
+                  if (name.includes('<')) name = name.split('<')[0].trim();
+                  if (name.includes('@')) name = name.split('@')[0].trim();
+                  if (!name) name = 'Anonymous';
+
                   const pct = git.total_commits > 0 ? ((c.commits / git.total_commits) * 100).toFixed(1) : '0.0';
                   return (
                     <tr key={i} className="hover:bg-[#14142b] transition-colors">
-                      <td className="py-3 px-4 font-bold text-indigo-300">{c.author || c.name || 'Anonymous'}</td>
+                      <td className="py-3 px-4 font-bold text-indigo-300 flex items-center gap-2">
+                        <span className="text-slate-500">👤</span>
+                        <span>{name}</span>
+                      </td>
                       <td className="py-3 px-4 text-right font-extrabold text-slate-100">{c.commits}</td>
                       <td className="py-3 px-4 text-right font-mono text-slate-400">{pct}%</td>
                     </tr>

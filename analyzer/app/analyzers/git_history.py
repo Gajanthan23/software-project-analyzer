@@ -94,7 +94,11 @@ def analyze_git_history(repo_path: str) -> Dict[str, Any]:
             if len(parts) >= 2:
                 count = int(parts[0].strip()) if parts[0].strip().isdigit() else 0
                 name = parts[1].strip()
-                top_contributors.append({"author": name, "commits": count})
+                if "<" in name:
+                    name = name.split("<")[0].strip()
+                if "@" in name:
+                    name = name.split("@")[0].strip()
+                top_contributors.append({"author": name or "Unknown", "commits": count})
 
     # 3. First and Latest Commit Dates (ISO Format & Age Calculation)
     latest_date_raw = _run_git_cmd(repo_path, ["log", "-1", "--format=%ct"])
