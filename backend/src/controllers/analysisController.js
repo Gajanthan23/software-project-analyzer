@@ -19,6 +19,7 @@ const projectModel  = require('../models/projectModel');
 const analysisModel = require('../models/analysisModel');
 const repositoryDownloader = require('../services/repositoryDownloader');
 const { callAnalyzer }     = require('../services/analyzerService');
+const githubService        = require('../services/githubService');
 const logger = require('../utils/logger');
 
 const analysisController = {

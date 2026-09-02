@@ -86,19 +86,38 @@ def analyze_git_history(repo_path: str) -> Dict[str, Any]:
     top_contributors = []
     contributor_count = 0
 
+    AUTHOR_ALIASES = {
+        "suthankan": "Suthankan1",
+        "suthankan balenthiran": "Suthankan1",
+        "suthankan1": "Suthankan1",
+        "gajanthan": "Gajanthan23",
+        "gajanthan23": "Gajanthan23",
+        "thuvarahan": "thuvarahan-t",
+        "thuvarahan thayalan": "thuvarahan-t",
+        "thuvarahan-t": "thuvarahan-t",
+        "pushmitha": "pushmitha20",
+        "pushmitha20": "pushmitha20",
+        "sinthuha": "Sinthuha-n",
+        "sinthuha nadesan": "Sinthuha-n",
+        "sinthuha-n": "Sinthuha-n"
+    }
+
     if shortlog_raw:
         lines = shortlog_raw.splitlines()
-        contributor_count = len(lines)
-        for line in lines[:10]:
+        grouped = {}
+        for line in lines:
             parts = line.strip().split("\t")
             if len(parts) >= 2:
                 count = int(parts[0].strip()) if parts[0].strip().isdigit() else 0
-                name = parts[1].strip()
-                if "<" in name:
-                    name = name.split("<")[0].strip()
-                if "@" in name:
-                    name = name.split("@")[0].strip()
-                top_contributors.append({"author": name or "Unknown", "commits": count})
+                raw_name = parts[1].strip()
+                clean_key = raw_name.lower().split("<")[0].split("@")[0].strip()
+                username = AUTHOR_ALIASES.get(clean_key, raw_name.split("<")[0].split("@")[0].strip())
+                grouped[username] = grouped.get(username, 0) + count
+
+        sorted_contribs = sorted(grouped.items(), key=lambda x: x[1], reverse=True)
+        contributor_count = len(sorted_contribs)
+        for name, count in sorted_contribs[:10]:
+            top_contributors.append({"author": name or "Unknown", "commits": count})
 
     # 3. First and Latest Commit Dates (ISO Format & Age Calculation)
     latest_date_raw = _run_git_cmd(repo_path, ["log", "-1", "--format=%ct"])
