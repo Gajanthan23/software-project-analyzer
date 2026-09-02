@@ -142,11 +142,16 @@ const githubService = {
     // 6. Fetch Top Contributors
     let api_contributors = [];
     try {
-      const contribRes = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${name}/contributors?per_page=10`, { headers });
+      const contribRes = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${name}/contributors?per_page=30`, { headers });
       if (contribRes.ok) {
         const contribData = await contribRes.json();
         if (Array.isArray(contribData)) {
-          api_contributors = contribData.map(c => ({ author: c.login, commits: c.contributions }));
+          api_contributors = contribData.map(c => ({
+            author: c.login,
+            commits: c.contributions,
+            avatar_url: c.avatar_url,
+            github_url: c.html_url
+          }));
         }
       }
     } catch (err) {

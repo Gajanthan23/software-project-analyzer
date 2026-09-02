@@ -132,12 +132,27 @@ export default function GitHistoryPage() {
                   if (name.includes('@')) name = name.split('@')[0].trim();
                   if (!name) name = 'Anonymous';
 
+                  const avatarUrl = c.avatar_url;
+                  const profileUrl = c.github_url || `https://github.com/${name}`;
                   const pct = git.total_commits > 0 ? ((c.commits / git.total_commits) * 100).toFixed(1) : '0.0';
+
                   return (
                     <tr key={i} className="hover:bg-[#14142b] transition-colors">
-                      <td className="py-3 px-4 font-bold text-indigo-300 flex items-center gap-2">
-                        <span className="text-slate-500">👤</span>
-                        <span>{name}</span>
+                      <td className="py-3 px-4 font-bold text-indigo-300">
+                        <a
+                          href={profileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2.5 hover:text-indigo-200 transition-colors"
+                        >
+                          {avatarUrl ? (
+                            <img src={avatarUrl} alt={name} className="w-6 h-6 rounded-full ring-1 ring-indigo-500/30" />
+                          ) : (
+                            <span className="text-slate-500">👤</span>
+                          )}
+                          <span>@{name}</span>
+                          <span className="text-[10px] text-slate-500">↗</span>
+                        </a>
                       </td>
                       <td className="py-3 px-4 text-right font-extrabold text-slate-100">{c.commits}</td>
                       <td className="py-3 px-4 text-right font-mono text-slate-400">{pct}%</td>

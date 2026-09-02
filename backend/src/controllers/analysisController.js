@@ -155,10 +155,17 @@ const analysisController = {
           if (analyzerResponse.git_history && analyzerResponse.git_history.status === 'ok') {
             const gitData = { ...analyzerResponse.git_history };
 
-            // Enrich with GitHub REST API metadata for full repository fidelity
-            if (project.api_contributors && project.api_contributors.length > 0 && (!gitData.top_contributors || gitData.top_contributors.length <= 1)) {
-              gitData.top_contributors = project.api_contributors;
-              gitData.contributor_count = Math.max(gitData.contributor_count || 0, project.api_contributors.length);
+            // Fetch live GitHub REST API contributors for 100% exact match with GitHub UI
+            try {
+              const githubData = await githubService.fetchRepoData(project.owner, project.name);
+              if (githubData.api_contributors && githubData.api_contributors.length > 0) {
+                gitData.top_contributors = githubData.api_contributors;
+                gitData.contributor_count = githubData.api_contributors.length;
+              }
+              if (githubData.open_prs_count !== undefined) project.open_prs_count = githubData.open_prs_count;
+              if (githubData.open_issues_count !== undefined) project.open_issues_count = githubData.open_issues_count;
+            } catch (err) {
+              logger.warn(`Could not fetch fresh GitHub API contributors for ${project.owner}/${project.name}: ${err.message}`);
             }
 
             if (project.created_at && (!gitData.first_commit_date || gitData.is_shallow_clone)) {
