@@ -151,6 +151,25 @@ CREATE TABLE IF NOT EXISTS documentation_metrics (
     created_at                TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Dependency Metrics table (Phase 14) — stores production & dev package manifests
+CREATE TABLE IF NOT EXISTS dependency_metrics (
+    id                           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    run_id                       UUID NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    project_id                   UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    production_dependency_count  INT DEFAULT 0,
+    dev_dependency_count         INT DEFAULT 0,
+    total_dependency_count       INT DEFAULT 0,
+    ecosystems                   JSONB DEFAULT '[]'::jsonb,
+    manifest_files               JSONB DEFAULT '[]'::jsonb,
+    dependencies_by_file         JSONB DEFAULT '{}'::jsonb,
+    top_dependencies             JSONB DEFAULT '[]'::jsonb,
+    recommendations              JSONB DEFAULT '[]'::jsonb,
+    vulnerability_notes          TEXT,
+    analysis_tool                TEXT,
+    created_at                   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
 
 
 

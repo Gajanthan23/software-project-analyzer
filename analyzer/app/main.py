@@ -4,7 +4,7 @@ app/main.py
 FastAPI Application Entry Point for the Python Analysis Microservice.
 Exposes:
   - GET  /health
-  - POST /analyze  (Phase 8: contract; Phase 9: metrics; Phase 10: complexity; Phase 11: duplication; Phase 12: testing; Phase 13: documentation)
+  - POST /analyze  (Phase 8: contract; Phase 9: metrics; Phase 10: complexity; Phase 11: duplication; Phase 12: testing; Phase 13: documentation; Phase 14: dependencies)
 """
 
 import os
@@ -15,6 +15,7 @@ from app.analyzers.complexity import analyze_complexity
 from app.analyzers.duplication import analyze_duplication
 from app.analyzers.testing import analyze_testing
 from app.analyzers.documentation import analyze_documentation
+from app.analyzers.dependencies import analyze_dependencies
 
 app = FastAPI(
     title="Software Project Complexity & Quality Analyzer Engine",
@@ -104,6 +105,19 @@ def analyze(request: AnalysisRequest):
             detail=f"Documentation analysis failed: {str(exc)}"
         )
 
+    # 7. Phase 14 — Run real multi-ecosystem dependency analysis
+    try:
+        dependencies_data = analyze_dependencies(repo_path)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Dependency analysis failed: {str(exc)}"
+        )
+
+    # Update dependency_count in metrics if parsed from manifests
+    if dependencies_data.get("total_dependency_count", 0) > 0:
+        metrics_data["dependency_count"] = dependencies_data["total_dependency_count"]
+
     # Compile recommendations from analyzers
     all_recommendations = []
     for rec in duplication_data.get("recommendations", []):
@@ -127,7 +141,14 @@ def analyze(request: AnalysisRequest):
             "message": rec
         })
 
-    # 7. Build response — real values for repository, metrics, complexity, duplication, testing, documentation
+    for rec in dependencies_data.get("recommendations", []):
+        all_recommendations.append({
+            "category": "dependencies",
+            "type": "maintenance",
+            "message": rec
+        })
+
+    # 8. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies
     return AnalysisResponse(
         status="success",
         repository_path=os.path.abspath(repo_path),
@@ -225,11 +246,22 @@ def analyze(request: AnalysisRequest):
             "analysis_tool":              documentation_data["analysis_tool"],
         },
 
-        # ── Phases 14–24: still not_implemented (Rule 4) ─────────────────
+        # ── Phase 14: REAL values ────────────────────────────────────────
         dependencies={
-            "status": "not_implemented",
-            "message": "Dependency file parsing arrives in Phase 14."
+            "status":                     "ok",
+            "production_dependency_count":dependencies_data["production_dependency_count"],
+            "dev_dependency_count":       dependencies_data["dev_dependency_count"],
+            "total_dependency_count":     dependencies_data["total_dependency_count"],
+            "ecosystems":                 dependencies_data["ecosystems"],
+            "manifest_files":             dependencies_data["manifest_files"],
+            "dependencies_by_file":       dependencies_data["dependencies_by_file"],
+            "top_dependencies":           dependencies_data["top_dependencies"],
+            "recommendations":            dependencies_data["recommendations"],
+            "vulnerability_notes":        dependencies_data["vulnerability_notes"],
+            "analysis_tool":              dependencies_data["analysis_tool"],
         },
+
+        # ── Phases 15–24: still not_implemented (Rule 4) ─────────────────
         security={
             "status": "not_implemented",
             "message": "Static security scan via bandit/semgrep arrives in Phase 15."

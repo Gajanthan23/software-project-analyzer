@@ -324,6 +324,57 @@ const analysisModel = {
   },
 
   /**
+   * Save dependency metrics for a completed run.
+   */
+  saveDependencyMetrics: async (runId, projectId, deps) => {
+    const result = await db.query(
+      `INSERT INTO dependency_metrics (
+         run_id, project_id,
+         production_dependency_count, dev_dependency_count, total_dependency_count,
+         ecosystems, manifest_files, dependencies_by_file, top_dependencies,
+         recommendations, vulnerability_notes, analysis_tool
+       ) VALUES (
+         $1, $2,
+         $3, $4, $5,
+         $6, $7, $8, $9,
+         $10, $11, $12
+       )
+       RETURNING *`,
+      [
+        runId, projectId,
+        deps.production_dependency_count || 0,
+        deps.dev_dependency_count || 0,
+        deps.total_dependency_count || 0,
+        JSON.stringify(deps.ecosystems || []),
+        JSON.stringify(deps.manifest_files || []),
+        JSON.stringify(deps.dependencies_by_file || {}),
+        JSON.stringify(deps.top_dependencies || []),
+        JSON.stringify(deps.recommendations || []),
+        deps.vulnerability_notes || null,
+        deps.analysis_tool || null,
+      ]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Get latest dependency metrics row for a project.
+   */
+  getLatestDependencyForProject: async (projectId) => {
+    const result = await db.query(
+      `SELECT dep.*
+       FROM dependency_metrics dep
+       JOIN analysis_runs ar ON ar.id = dep.run_id
+       WHERE dep.project_id = $1
+         AND ar.status = 'completed'
+       ORDER BY dep.created_at DESC
+       LIMIT 1`,
+      [projectId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
    * Get all analysis runs for a project (newest first).
    */
   getRunsForProject: async (projectId) => {

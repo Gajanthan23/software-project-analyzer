@@ -117,11 +117,22 @@ const analysisController = {
             logger.info(`Run ${run.id}: documentation_metrics row saved (id=${savedDocumentation.id})`);
           }
 
-          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation };
+          // 11. Save dependency metrics to DB (Phase 14)
+          let savedDependencies = null;
+          if (analyzerResponse.dependencies && analyzerResponse.dependencies.status === 'ok') {
+            savedDependencies = await analysisModel.saveDependencyMetrics(
+              run.id,
+              projectId,
+              analyzerResponse.dependencies
+            );
+            logger.info(`Run ${run.id}: dependency_metrics row saved (id=${savedDependencies.id})`);
+          }
+
+          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation, savedDependencies };
         }
       );
 
-      // 11. Mark completed
+      // 12. Mark completed
       const completedRun = await analysisModel.updateRunStatus(run.id, 'completed');
 
       return res.status(200).json({
@@ -135,8 +146,8 @@ const analysisController = {
           duplication:   analysisResult.analyzerResponse.duplication,
           testing:       analysisResult.analyzerResponse.testing,
           documentation: analysisResult.analyzerResponse.documentation,
-          // Placeholders for future phases — forward what the analyzer returned
           dependencies:  analysisResult.analyzerResponse.dependencies,
+          // Placeholders for future phases — forward what the analyzer returned
           security:      analysisResult.analyzerResponse.security,
           architecture:  analysisResult.analyzerResponse.architecture,
           git_history:   analysisResult.analyzerResponse.git_history,
@@ -196,8 +207,9 @@ const analysisController = {
       const duplication = await analysisModel.getLatestDuplicationForProject(projectId);
       const testing = await analysisModel.getLatestTestingForProject(projectId);
       const documentation = await analysisModel.getLatestDocumentationForProject(projectId);
+      const dependencies = await analysisModel.getLatestDependencyForProject(projectId);
 
-      if (!metrics && !complexity && !duplication && !testing && !documentation) {
+      if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies) {
         return res.status(404).json({
           status:  'error',
           message: 'No completed analysis found for this project. Run an analysis first.',
@@ -206,7 +218,7 @@ const analysisController = {
 
       return res.status(200).json({
         status: 'success',
-        data:   { metrics, complexity, duplication, testing, documentation },
+        data:   { metrics, complexity, duplication, testing, documentation, dependencies },
       });
     } catch (error) {
       next(error);
@@ -323,6 +335,35 @@ const analysisController = {
       return res.status(200).json({
         status: 'success',
         data:   { documentation },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest/dependencies
+   * Returns the most recent completed dependency_metrics row for a project.
+   */
+  getLatestDependencies: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const dependencies = await analysisModel.getLatestDependencyForProject(projectId);
+      if (!dependencies) {
+        return res.status(404).json({
+          status:  'error',
+          message: 'No completed dependency analysis found for this project. Run an analysis first.',
+        });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data:   { dependencies },
       });
     } catch (error) {
       next(error);
