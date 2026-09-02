@@ -17,6 +17,7 @@ from app.analyzers.testing import analyze_testing
 from app.analyzers.documentation import analyze_documentation
 from app.analyzers.dependencies import analyze_dependencies
 from app.analyzers.security import analyze_security
+from app.analyzers.architecture import analyze_architecture
 
 app = FastAPI(
     title="Software Project Complexity & Quality Analyzer Engine",
@@ -124,6 +125,18 @@ def analyze(request: AnalysisRequest):
             detail=f"Security analysis failed: {str(exc)}"
         )
 
+    # 9. Phase 16 — Run real heuristic architecture pattern analysis
+    try:
+        architecture_data = analyze_architecture(
+            repo_path,
+            total_source_files=metrics_data.get("source_files", 0)
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Architecture analysis failed: {str(exc)}"
+        )
+
     # Update dependency_count in metrics if parsed from manifests
     if dependencies_data.get("total_dependency_count", 0) > 0:
         metrics_data["dependency_count"] = dependencies_data["total_dependency_count"]
@@ -165,7 +178,14 @@ def analyze(request: AnalysisRequest):
             "message": rec
         })
 
-    # 9. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies, security
+    for rec in architecture_data.get("recommendations", []):
+        all_recommendations.append({
+            "category": "architecture",
+            "type": "refactor",
+            "message": rec
+        })
+
+    # 10. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies, security, architecture
     return AnalysisResponse(
         status="success",
         repository_path=os.path.abspath(repo_path),
@@ -289,11 +309,22 @@ def analyze(request: AnalysisRequest):
             "analysis_tool":              security_data["analysis_tool"],
         },
 
-        # ── Phases 16–24: still not_implemented (Rule 4) ─────────────────
+        # ── Phase 16: REAL values (HEURISTIC) ────────────────────────────
         architecture={
-            "status": "not_implemented",
-            "message": "Architecture pattern heuristics arrive in Phase 16."
+            "status":                     "ok",
+            "classification":             architecture_data["classification"],
+            "detected_pattern":           architecture_data["detected_pattern"],
+            "confidence_score":           architecture_data["confidence_score"],
+            "detected_layers":            architecture_data["detected_layers"],
+            "architectural_problems":     architecture_data["architectural_problems"],
+            "layer_violations_count":     architecture_data["layer_violations_count"],
+            "structural_summary":         architecture_data["structural_summary"],
+            "recommendations":            architecture_data["recommendations"],
+            "analysis_notes":             architecture_data["analysis_notes"],
+            "analysis_tool":              architecture_data["analysis_tool"],
         },
+
+        # ── Phases 17–24: still not_implemented (Rule 4) ─────────────────
         git_history={
             "status": "not_implemented",
             "message": "Git commit & contributor statistics arrive in Phase 17."

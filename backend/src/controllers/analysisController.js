@@ -139,11 +139,22 @@ const analysisController = {
             logger.info(`Run ${run.id}: ${savedSecurity.length} security_findings rows saved`);
           }
 
-          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation, savedDependencies, savedSecurity };
+          // 13. Save architecture metrics to DB (Phase 16)
+          let savedArchitecture = null;
+          if (analyzerResponse.architecture && analyzerResponse.architecture.status === 'ok') {
+            savedArchitecture = await analysisModel.saveArchitectureMetrics(
+              run.id,
+              projectId,
+              analyzerResponse.architecture
+            );
+            logger.info(`Run ${run.id}: architecture_metrics row saved (id=${savedArchitecture.id})`);
+          }
+
+          return { analyzerResponse, savedMetrics, savedComplexity, savedDuplication, savedTesting, savedDocumentation, savedDependencies, savedSecurity, savedArchitecture };
         }
       );
 
-      // 13. Mark completed
+      // 14. Mark completed
       const completedRun = await analysisModel.updateRunStatus(run.id, 'completed');
 
       return res.status(200).json({
@@ -159,8 +170,8 @@ const analysisController = {
           documentation: analysisResult.analyzerResponse.documentation,
           dependencies:  analysisResult.analyzerResponse.dependencies,
           security:      analysisResult.analyzerResponse.security,
-          // Placeholders for future phases — forward what the analyzer returned
           architecture:  analysisResult.analyzerResponse.architecture,
+          // Placeholders for future phases — forward what the analyzer returned
           git_history:   analysisResult.analyzerResponse.git_history,
           scores:        analysisResult.analyzerResponse.scores,
           prediction:    analysisResult.analyzerResponse.prediction,
@@ -220,8 +231,9 @@ const analysisController = {
       const documentation = await analysisModel.getLatestDocumentationForProject(projectId);
       const dependencies = await analysisModel.getLatestDependencyForProject(projectId);
       const security = await analysisModel.getLatestSecurityForProject(projectId);
+      const architecture = await analysisModel.getLatestArchitectureForProject(projectId);
 
-      if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies && !security) {
+      if (!metrics && !complexity && !duplication && !testing && !documentation && !dependencies && !security && !architecture) {
         return res.status(404).json({
           status:  'error',
           message: 'No completed analysis found for this project. Run an analysis first.',
@@ -230,7 +242,7 @@ const analysisController = {
 
       return res.status(200).json({
         status: 'success',
-        data:   { metrics, complexity, duplication, testing, documentation, dependencies, security },
+        data:   { metrics, complexity, duplication, testing, documentation, dependencies, security, architecture },
       });
     } catch (error) {
       next(error);
@@ -405,6 +417,35 @@ const analysisController = {
       return res.status(200).json({
         status: 'success',
         data:   { security },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest/architecture
+   * Returns the most recent completed architecture_metrics row for a project.
+   */
+  getLatestArchitecture: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const architecture = await analysisModel.getLatestArchitectureForProject(projectId);
+      if (!architecture) {
+        return res.status(404).json({
+          status:  'error',
+          message: 'No completed architecture analysis found for this project. Run an analysis first.',
+        });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data:   { architecture },
       });
     } catch (error) {
       next(error);

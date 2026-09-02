@@ -185,3 +185,22 @@ CREATE TABLE IF NOT EXISTS security_findings (
     analysis_tool  TEXT,
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Architecture Metrics table (Phase 16) — stores heuristic architecture pattern & violation analysis
+CREATE TABLE IF NOT EXISTS architecture_metrics (
+    id                     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    run_id                 UUID NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+    project_id             UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    classification         VARCHAR(50) DEFAULT 'HEURISTIC',
+    detected_pattern       VARCHAR(100) NOT NULL,
+    confidence_score       NUMERIC(5, 2) DEFAULT 0.0,
+    detected_layers        JSONB DEFAULT '[]'::jsonb,
+    architectural_problems JSONB DEFAULT '[]'::jsonb,
+    layer_violations_count INT DEFAULT 0,
+    structural_summary     JSONB DEFAULT '{}'::jsonb,
+    recommendations        JSONB DEFAULT '[]'::jsonb,
+    analysis_notes         TEXT,
+    analysis_tool          TEXT,
+    created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+

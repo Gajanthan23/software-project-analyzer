@@ -443,6 +443,57 @@ const analysisModel = {
   },
 
   /**
+   * Save architecture metrics for a completed run.
+   */
+  saveArchitectureMetrics: async (runId, projectId, arch) => {
+    const result = await db.query(
+      `INSERT INTO architecture_metrics (
+         run_id, project_id,
+         classification, detected_pattern, confidence_score,
+         detected_layers, architectural_problems, layer_violations_count,
+         structural_summary, recommendations, analysis_notes, analysis_tool
+       ) VALUES (
+         $1, $2,
+         $3, $4, $5,
+         $6, $7, $8,
+         $9, $10, $11, $12
+       )
+       RETURNING *`,
+      [
+        runId, projectId,
+        arch.classification || 'HEURISTIC',
+        arch.detected_pattern || 'Flat / Unstructured Architecture',
+        arch.confidence_score || 0.0,
+        JSON.stringify(arch.detected_layers || []),
+        JSON.stringify(arch.architectural_problems || []),
+        arch.layer_violations_count || 0,
+        JSON.stringify(arch.structural_summary || {}),
+        JSON.stringify(arch.recommendations || []),
+        arch.analysis_notes || null,
+        arch.analysis_tool || null,
+      ]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Get latest architecture metrics for a project.
+   */
+  getLatestArchitectureForProject: async (projectId) => {
+    const result = await db.query(
+      `SELECT am.*
+       FROM architecture_metrics am
+       JOIN analysis_runs ar ON ar.id = am.run_id
+       WHERE am.project_id = $1
+         AND ar.status = 'completed'
+       ORDER BY am.created_at DESC
+       LIMIT 1`,
+      [projectId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
    * Get all analysis runs for a project (newest first).
    */
   getRunsForProject: async (projectId) => {
