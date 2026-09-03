@@ -115,6 +115,9 @@ def analyze_complexity(repo_path: str) -> Dict[str, Any]:
         ]
 
         for filename in filenames:
+            fname_lower = filename.lower()
+            if fname_lower.endswith(".min.js") or fname_lower.endswith(".bundle.js") or fname_lower.endswith("-min.js") or fname_lower.endswith(".pack.js"):
+                continue
             ext = Path(filename).suffix.lower()
             if ext not in SUPPORTED_EXTENSIONS:
                 continue
@@ -196,7 +199,16 @@ def analyze_complexity(repo_path: str) -> Dict[str, Any]:
         "max_complexity": max_cc,
         "high_complexity_count": high_complexity_count,
         "high_complexity_threshold": HIGH_COMPLEXITY_THRESHOLD,
-        "complexity_distribution": distribution,
+        "complexity_distribution": {
+            "low": distribution["low"],
+            "moderate": distribution["moderate"],
+            "high": distribution["high"],
+            "very_high": distribution["very_high"],
+            "1_5": distribution["low"],
+            "6_10": distribution["moderate"],
+            "11_20": distribution["high"],
+            "21_plus": distribution["very_high"]
+        },
         "top_complex_functions": top_complex_functions,
         "file_complexity": top_complex_files,
         "analysis_tool": "lizard (multi-language McCabe Cyclomatic Complexity analyzer supporting JS, TS, Python, Java, C/C++, Go, Rust, PHP)"

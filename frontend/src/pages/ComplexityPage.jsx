@@ -52,10 +52,10 @@ export default function ComplexityPage() {
 
   const dist = complexity.complexity_distribution || {};
   const chartData = [
-    { range: 'Low (1-5)',       count: dist['1_5'] || 0,   color: '#10b981' },
-    { range: 'Moderate (6-10)', count: dist['6_10'] || 0,  color: '#6366f1' },
-    { range: 'High (11-20)',    count: dist['11_20'] || 0, color: '#f59e0b' },
-    { range: 'Very High (21+)', count: dist['21_plus'] || 0,color: '#ef4444' },
+    { range: 'Low (1-5)',       count: dist.low ?? dist['1_5'] ?? 0,         color: '#10b981' },
+    { range: 'Moderate (6-10)', count: dist.moderate ?? dist['6_10'] ?? 0,    color: '#6366f1' },
+    { range: 'High (11-20)',    count: dist.high ?? dist['11_20'] ?? 0,       color: '#f59e0b' },
+    { range: 'Very High (21+)', count: dist.very_high ?? dist['21_plus'] ?? 0,color: '#ef4444' },
   ];
 
   return (
@@ -157,8 +157,8 @@ export default function ComplexityPage() {
                   return (
                     <tr key={i} className="hover:bg-[#14142b] transition-colors">
                       <td className="py-3 px-4 font-mono font-bold text-indigo-300">{func.name}</td>
-                      <td className="py-3 px-4 font-mono text-slate-400">{func.file_path}</td>
-                      <td className="py-3 px-4 text-center font-mono text-slate-500">{func.line_number || func.line}</td>
+                      <td className="py-3 px-4 font-mono text-slate-400">{func.file || func.file_path}</td>
+                      <td className="py-3 px-4 text-center font-mono text-slate-500">{func.line || func.line_number}</td>
                       <td className="py-3 px-4 text-right font-extrabold text-slate-100">{comp}</td>
                       <td className="py-3 px-4 text-center">
                         <span className={`badge ${isHigh ? 'bg-red-500/20 text-red-300 ring-1 ring-red-500/30' : 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/30'}`}>
