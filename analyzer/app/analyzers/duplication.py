@@ -237,7 +237,10 @@ def analyze_duplication(repo_path: str, total_code_loc: int = 0) -> Dict[str, An
             "start_line_b": c["start_line_b"],
             "end_line_b": c["end_line_b"],
             "lines_count": c["lines_count"],
-            "fragment_preview": c["fragment_preview"]
+            "lines": c["lines_count"],
+            "duplicated_lines": c["lines_count"],
+            "fragment_preview": c["fragment_preview"],
+            "snippet": c["fragment_preview"]
         })
 
     total_dup_loc = len(duplicated_lines_set)

@@ -130,10 +130,10 @@ export default function QualityPage() {
                       {inst.file_b} <span className="text-slate-500">(L{inst.start_line_b})</span>
                     </td>
                     <td className="py-3 px-4 text-center font-extrabold text-slate-100">
-                      {inst.lines || inst.duplicated_lines || 5}
+                      {inst.lines_count ?? inst.lines ?? inst.duplicated_lines ?? 0}
                     </td>
                     <td className="py-3 px-4 font-mono text-[11px] text-slate-400 max-w-xs truncate">
-                      <code>{inst.snippet || 'identical logic block'}</code>
+                      <code>{inst.fragment_preview || inst.snippet || 'identical logic block'}</code>
                     </td>
                   </tr>
                 ))}
