@@ -91,10 +91,76 @@ def _shannon_entropy(data: str) -> float:
     return entropy
 
 
+def _is_generated_artifact(rel_path: str) -> bool:
+    """Detects if a file path belongs to auto-generated build, test report, or bundle assets."""
+    path_lower = rel_path.lower()
+    artifact_indicators = [
+        "playwright-report", "test-results", "coverage/", "lcov-report",
+        "dist/", "build/", "out/", ".next/", ".nuxt/", "target/site",
+        "-min.js", ".min.js", ".bundle.js", ".pack.js"
+    ]
+    return any(ind in path_lower for ind in artifact_indicators)
+
+
+def _get_remediation_guidance(rule_id: str, category: str) -> Tuple[str, str, str]:
+    """
+    Returns (explanation, bad_example, good_example) in plain English for developer guidance.
+    """
+    if "SQL" in rule_id or "SQL" in category:
+        return (
+            "Raw SQL queries constructed via string concatenation permit malicious SQL injection.",
+            "db.query('SELECT * FROM users WHERE id = ' + req.body.id)",
+            "db.query('SELECT * FROM users WHERE id = $1', [req.body.id])"
+        )
+    elif "DANG-01" in rule_id:
+        return (
+            "Dynamic code execution via eval() or exec() compiles arbitrary strings into code, allowing complete remote code execution.",
+            "eval('const result = ' + userInput);",
+            "const result = JSON.parse(userInput);"
+        )
+    elif "DANG-02" in rule_id or "DANG-03" in rule_id:
+        return (
+            "Direct HTML string insertion into DOM bypasses framework XSS protection.",
+            "element.innerHTML = '<p>' + userComment + '</p>';",
+            "element.textContent = userComment;"
+        )
+    elif "DANG-04" in rule_id:
+        return (
+            "Running sub-processes with shell=True executes string input inside system shell interpreter.",
+            "subprocess.run('ls ' + user_dir, shell=True)",
+            "subprocess.run(['ls', user_dir], shell=False)"
+        )
+    elif "SECRET" in rule_id or "ENTROPY" in rule_id or "Secret" in category:
+        return (
+            "Hardcoded API credentials or private keys in source code leak secrets when pushed to public or shared git repositories.",
+            "const API_KEY = 'AKIAIOSFODNN7EXAMPLE';",
+            "const API_KEY = process.env.AWS_ACCESS_KEY_ID;"
+        )
+    elif "CFG" in rule_id or "Config" in category:
+        return (
+            "Disabling TLS certificate checks exposes network calls to Man-In-The-Middle (MITM) interception.",
+            "process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';",
+            "// Remove flag in production; use valid CA certificates"
+        )
+    elif "AUTH" in rule_id or "Auth" in category:
+        return (
+            "MD5 and SHA1 hash algorithms are cryptographically broken and vulnerable to collision attacks.",
+            "crypto.createHash('md5').update(password).digest('hex')",
+            "bcrypt.hash(password, 10)"
+        )
+    else:
+        return (
+            "Potential security risk identified via static code pattern scanning. Review logic for secure software engineering practices.",
+            "// Insecure pattern detected on this line",
+            "// Refactor using parameterized inputs or environment configuration"
+        )
+
+
 def _scan_file_secrets_and_patterns(filepath: Path, repo_root: Path) -> List[Dict[str, Any]]:
     """Scans a single file for hardcoded secrets and dangerous code patterns."""
     findings = []
     rel_path = os.path.relpath(filepath, repo_root).replace("\\", "/")
+    is_artifact = _is_generated_artifact(rel_path)
 
     try:
         content = filepath.read_text(encoding="utf-8", errors="replace")
@@ -108,15 +174,23 @@ def _scan_file_secrets_and_patterns(filepath: Path, repo_root: Path) -> List[Dic
             # 1. Regex Secret Matching
             for pattern, severity, name, rec in SECRET_PATTERNS:
                 if re.search(pattern, line_str):
+                    rule_id = "SEC-SECRET-01"
+                    exp, bad, good = _get_remediation_guidance(rule_id, "Hardcoded Secret")
                     findings.append({
                         "file": rel_path,
+                        "file_path": rel_path,
                         "line": line_num,
+                        "line_number": line_num,
                         "severity": severity,
                         "category": "Hardcoded Secret",
                         "title": f"Potential security issue: {name} detected in source code",
                         "description": f"Potential security issue: Found pattern matching hardcoded credentials on line {line_num}.",
                         "recommendation": rec,
-                        "rule_id": "SEC-SECRET-01"
+                        "rule_id": rule_id,
+                        "is_generated_artifact": is_artifact,
+                        "explanation": exp,
+                        "remediation_bad": bad,
+                        "remediation_good": good
                     })
                     break  # One secret match per line
 
@@ -125,29 +199,44 @@ def _scan_file_secrets_and_patterns(filepath: Path, repo_root: Path) -> List[Dic
             if entropy_match:
                 candidate = entropy_match.group(2)
                 if _shannon_entropy(candidate) > 3.8:
+                    rule_id = "SEC-ENTROPY-01"
+                    exp, bad, good = _get_remediation_guidance(rule_id, "Hardcoded Secret")
                     findings.append({
                         "file": rel_path,
+                        "file_path": rel_path,
                         "line": line_num,
+                        "line_number": line_num,
                         "severity": "High",
                         "category": "Hardcoded Secret",
                         "title": "Potential security issue: High-entropy hardcoded secret candidate",
                         "description": f"Potential security issue: High entropy string ({_shannon_entropy(candidate):.2f}) assigned to sensitive variable name.",
                         "recommendation": "Extract secret into environment variable configuration.",
-                        "rule_id": "SEC-ENTROPY-01"
+                        "rule_id": rule_id,
+                        "is_generated_artifact": is_artifact,
+                        "explanation": exp,
+                        "remediation_bad": bad,
+                        "remediation_good": good
                     })
 
             # 3. SAST Pattern Matching
             for pattern, severity, category, name, rec, rule_id in [(p[0], p[1], p[2], p[0], p[3], p[4]) for p in VULN_PATTERNS]:
                 if re.search(pattern, line_str):
+                    exp, bad, good = _get_remediation_guidance(rule_id, category)
                     findings.append({
                         "file": rel_path,
+                        "file_path": rel_path,
                         "line": line_num,
+                        "line_number": line_num,
                         "severity": severity,
                         "category": category,
                         "title": f"Potential security issue: {category} - {rec.split('.')[0]}",
                         "description": f"Potential security issue: Detected code pattern matching {category} on line {line_num}.",
                         "recommendation": rec,
-                        "rule_id": rule_id
+                        "rule_id": rule_id,
+                        "is_generated_artifact": is_artifact,
+                        "explanation": exp,
+                        "remediation_bad": bad,
+                        "remediation_good": good
                     })
 
     except Exception:
