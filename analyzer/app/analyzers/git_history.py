@@ -117,7 +117,13 @@ def analyze_git_history(repo_path: str) -> Dict[str, Any]:
         sorted_contribs = sorted(grouped.items(), key=lambda x: x[1], reverse=True)
         contributor_count = len(sorted_contribs)
         for name, count in sorted_contribs[:10]:
-            top_contributors.append({"author": name or "Unknown", "commits": count})
+            clean_name = name or "Unknown"
+            top_contributors.append({
+                "author": clean_name,
+                "commits": count,
+                "avatar_url": f"https://github.com/{clean_name}.png" if clean_name != "Unknown" else None,
+                "github_url": f"https://github.com/{clean_name}" if clean_name != "Unknown" else None
+            })
 
     # 3. First and Latest Commit Dates (ISO Format & Age Calculation)
     latest_date_raw = _run_git_cmd(repo_path, ["log", "-1", "--format=%ct"])

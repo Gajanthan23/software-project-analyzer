@@ -132,7 +132,7 @@ export default function GitHistoryPage() {
                   if (name.includes('@')) name = name.split('@')[0].trim();
                   if (!name) name = 'Anonymous';
 
-                  const avatarUrl = c.avatar_url;
+                  const avatarUrl = c.avatar_url || c.avatarUrl || (name && name !== 'Anonymous' ? `https://github.com/${name}.png` : null);
                   const profileUrl = c.github_url || `https://github.com/${name}`;
                   const pct = git.total_commits > 0 ? ((c.commits / git.total_commits) * 100).toFixed(1) : '0.0';
 
@@ -146,7 +146,15 @@ export default function GitHistoryPage() {
                           className="inline-flex items-center gap-2.5 hover:text-indigo-200 transition-colors"
                         >
                           {avatarUrl ? (
-                            <img src={avatarUrl} alt={name} className="w-6 h-6 rounded-full ring-1 ring-indigo-500/30" />
+                            <img
+                              src={avatarUrl}
+                              alt={name}
+                              className="w-6 h-6 rounded-full ring-1 ring-indigo-500/30 object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = `https://github.com/${name}.png`;
+                              }}
+                            />
                           ) : (
                             <span className="text-slate-500">👤</span>
                           )}
