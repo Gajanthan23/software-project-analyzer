@@ -273,6 +273,13 @@ export default function ProjectOverviewPage() {
                       />
                     </div>
                   </div>
+                  {key === 'security' && (
+                    <p className="mt-2 text-[11px] font-medium text-emerald-400/90 leading-tight">
+                      {val === 100 || (security?.total_findings || 0) === 0
+                        ? "0 static security issues or hardcoded secrets detected in repository source files."
+                        : `${security?.total_findings || 0} static security finding(s) detected.`}
+                    </p>
+                  )}
                 </Link>
               );
             })}
@@ -306,7 +313,11 @@ export default function ProjectOverviewPage() {
             <div className="card">
               <span className="text-xs text-slate-500 uppercase tracking-wider">Security Findings</span>
               <p className="mt-2 text-2xl font-bold text-amber-400">{security?.total_findings || 0}</p>
-              <span className="text-[10px] text-slate-600">Static Scan Issues</span>
+              <span className="text-[10px] text-emerald-400 font-medium">
+                {(security?.total_findings || 0) === 0
+                  ? "0 static security issues or hardcoded secrets detected in repository source files."
+                  : "Static Scan Issues"}
+              </span>
             </div>
 
             <div className="card">

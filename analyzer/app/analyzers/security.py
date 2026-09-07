@@ -27,7 +27,7 @@ SKIP_DIRS = {
     ".git", "__pycache__", ".pytest_cache", ".mypy_cache",
     "node_modules", ".venv", "venv", "env", ".env",
     "dist", "build", ".build", "out", ".next", ".nuxt",
-    "coverage", ".coverage", "vendor", "Pods"
+    "coverage", ".coverage", "vendor", "Pods", "playwright-report", "test-results"
 }
 
 ALLOWED_EXTENSIONS = {

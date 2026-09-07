@@ -58,6 +58,12 @@ const subPages = [
     icon: '💡',
     description: 'Prioritised improvements',
   },
+  {
+    to: 'history',
+    label: 'History',
+    icon: '⏱',
+    description: 'Past analysis runs & trends',
+  },
 ];
 
 export default function Sidebar() {

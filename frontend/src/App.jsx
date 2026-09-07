@@ -79,6 +79,7 @@ export default function App() {
             <Route path="architecture"       element={<ArchitecturePage />}    />
             <Route path="git-history"        element={<GitHistoryPage />}      />
             <Route path="recommendations"    element={<RecommendationsPage />} />
+            <Route path="history"            element={<HistoryPage />}         />
           </Route>
         </Route>
 

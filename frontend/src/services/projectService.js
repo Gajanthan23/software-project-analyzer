@@ -141,5 +141,13 @@ export const projectService = {
   getAnalysisRuns: async (id) => {
     const response = await api.get(`/projects/${id}/analyses`);
     return response.data.data.runs;
+  },
+
+  /**
+   * Fetch details for a specific historical analysis run ID.
+   */
+  getAnalysisRunDetails: async (id, runId) => {
+    const response = await api.get(`/projects/${id}/analyses/${runId}`);
+    return response.data.data;
   }
 };

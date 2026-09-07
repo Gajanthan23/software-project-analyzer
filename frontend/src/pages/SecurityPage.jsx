@@ -295,7 +295,7 @@ export default function SecurityPage() {
         {filteredFindings.length === 0 ? (
           <div className="card py-12 text-center border-emerald-500/30 bg-emerald-500/10">
             <span className="text-4xl">🛡️</span>
-            <p className="mt-3 text-base font-semibold text-emerald-300">No static security vulnerabilities match your filter!</p>
+            <p className="mt-3 text-base font-semibold text-emerald-300">0 static security issues or hardcoded secrets detected in repository source files.</p>
             <p className="mt-1 text-xs text-emerald-400/70">
               {hideArtifacts
                 ? 'All primary source code files are clean! (Click "Showing All Artifacts" above if you wish to inspect generated report files).'

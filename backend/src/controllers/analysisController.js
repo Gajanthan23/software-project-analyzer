@@ -618,6 +618,32 @@ const analysisController = {
       next(error);
     }
   },
+
+  /**
+   * GET /api/projects/:id/analyses/:analysisId
+   * Returns full multi-metric details for a specific historical analysis run.
+   */
+  getAnalysisById: async (req, res, next) => {
+    try {
+      const { id: projectId, analysisId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const runDetails = await analysisModel.getRunDetailsById(projectId, analysisId);
+      if (!runDetails) {
+        return res.status(404).json({ status: 'error', message: 'Analysis run not found.' });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data: runDetails,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 module.exports = analysisController;

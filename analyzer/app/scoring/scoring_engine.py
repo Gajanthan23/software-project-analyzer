@@ -201,14 +201,26 @@ def calculate_security_score(security: Dict[str, Any]) -> float:
     """
     Security Score (0-100):
       Base Score: 100
-      Deductions by Severity:
+      Deductions by Severity (excluding generated test/build artifacts):
         - Critical Finding: -25 pts each
         - High Finding:     -15 pts each
         - Medium Finding:   -5 pts each
         - Low Finding:      -2 pts each
     """
     score = 100.0
-    counts = security.get("severity_counts", {})
+    findings = security.get("findings", [])
+
+    if findings:
+        # Exclude auto-generated test report bundles and build artifacts
+        source_findings = [f for f in findings if not f.get("is_generated_artifact", False)]
+        counts = {
+            "Critical": sum(1 for f in source_findings if f.get("severity") == "Critical"),
+            "High": sum(1 for f in source_findings if f.get("severity") == "High"),
+            "Medium": sum(1 for f in source_findings if f.get("severity") == "Medium"),
+            "Low": sum(1 for f in source_findings if f.get("severity") == "Low"),
+        }
+    else:
+        counts = security.get("severity_counts", {})
 
     score -= float(counts.get("Critical", 0)) * SECURITY_PENALTY_CRITICAL
     score -= float(counts.get("High", 0)) * SECURITY_PENALTY_HIGH

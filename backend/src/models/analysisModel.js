@@ -659,17 +659,95 @@ const analysisModel = {
   },
 
   /**
-   * Get all analysis runs for a project (newest first).
+   * Get all analysis runs for a project (newest first) with scores and metrics overview.
    */
   getRunsForProject: async (projectId) => {
     const result = await db.query(
-      `SELECT id, project_id, status, error_message, started_at, completed_at
-       FROM analysis_runs
-       WHERE project_id = $1
-       ORDER BY started_at DESC`,
+      `SELECT 
+         ar.id,
+         ar.project_id,
+         ar.status,
+         ar.error_message,
+         ar.started_at,
+         ar.completed_at,
+         EXTRACT(EPOCH FROM (ar.completed_at - ar.started_at)) AS duration_seconds,
+         qs.overall_score,
+         qs.score_band,
+         qs.code_quality_score,
+         qs.maintainability_score,
+         qs.complexity_score,
+         qs.architecture_score,
+         qs.testing_score,
+         qs.security_score,
+         qs.documentation_score,
+         qs.sub_scores,
+         cm.total_files,
+         cm.source_files,
+         cm.total_loc,
+         cm.code_loc,
+         cm.primary_language
+       FROM analysis_runs ar
+       LEFT JOIN quality_scores qs ON qs.run_id = ar.id
+       LEFT JOIN code_metrics cm ON cm.run_id = ar.id
+       WHERE ar.project_id = $1
+       ORDER BY ar.started_at DESC`,
       [projectId]
     );
     return result.rows;
+  },
+
+  /**
+   * Get full multi-metric analysis payload for a specific historical run ID.
+   */
+  getRunDetailsById: async (projectId, runId) => {
+    const runRes = await db.query(
+      `SELECT id, project_id, status, error_message, started_at, completed_at,
+              EXTRACT(EPOCH FROM (completed_at - started_at)) AS duration_seconds
+       FROM analysis_runs
+       WHERE id = $1 AND project_id = $2`,
+      [runId, projectId]
+    );
+    const run = runRes.rows[0];
+    if (!run) return null;
+
+    const metricsRes = await db.query(`SELECT * FROM code_metrics WHERE run_id = $1`, [runId]);
+    const complexityRes = await db.query(`SELECT * FROM complexity_metrics WHERE run_id = $1`, [runId]);
+    const duplicationRes = await db.query(`SELECT * FROM duplication_metrics WHERE run_id = $1`, [runId]);
+    const testingRes = await db.query(`SELECT * FROM testing_metrics WHERE run_id = $1`, [runId]);
+    const docRes = await db.query(`SELECT * FROM documentation_metrics WHERE run_id = $1`, [runId]);
+    const depRes = await db.query(`SELECT * FROM dependency_metrics WHERE run_id = $1`, [runId]);
+    const secRes = await db.query(`SELECT * FROM security_findings WHERE run_id = $1 ORDER BY severity ASC, created_at DESC`, [runId]);
+    const archRes = await db.query(`SELECT * FROM architecture_metrics WHERE run_id = $1`, [runId]);
+    const gitRes = await db.query(`SELECT * FROM git_metrics WHERE run_id = $1`, [runId]);
+    const scoresRes = await db.query(`SELECT * FROM quality_scores WHERE run_id = $1`, [runId]);
+    const recsRes = await db.query(`SELECT * FROM recommendations WHERE run_id = $1 ORDER BY CASE priority WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END, created_at DESC`, [runId]);
+
+    const findings = secRes.rows;
+    const severityCounts = {
+      Critical: findings.filter(f => f.severity === 'Critical').length,
+      High:     findings.filter(f => f.severity === 'High').length,
+      Medium:   findings.filter(f => f.severity === 'Medium').length,
+      Low:      findings.filter(f => f.severity === 'Low').length,
+    };
+
+    return {
+      run,
+      metrics: metricsRes.rows[0] || null,
+      complexity: complexityRes.rows[0] || null,
+      duplication: duplicationRes.rows[0] || null,
+      testing: testingRes.rows[0] || null,
+      documentation: docRes.rows[0] || null,
+      dependencies: depRes.rows[0] || null,
+      security: {
+        total_findings: findings.length,
+        severity_counts: severityCounts,
+        findings,
+      },
+      architecture: archRes.rows[0] || null,
+      git_history: gitRes.rows[0] || null,
+      scores: scoresRes.rows[0] || null,
+      recommendations: recsRes.rows,
+    };
   },
 };
 
