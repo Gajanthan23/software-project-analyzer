@@ -3,7 +3,7 @@
  *
  * Analysis History & Score Trends Page — Phase 21 (Section 24 & Section 26)
  * Displays past analysis runs, chronological score trend charts (Recharts),
- * score deltas, and historical run inspection drill-downs.
+ * score deltas, failed run diagnostic callouts, and historical run inspection drill-downs.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -22,6 +22,18 @@ import {
 } from 'recharts';
 import { projectService } from '../services/projectService';
 import AnalysisTypeBadge from '../components/AnalysisTypeBadge';
+
+function parseScore(val, subVal) {
+  if (val !== null && val !== undefined && val !== '') {
+    const num = parseFloat(val);
+    if (!isNaN(num)) return num;
+  }
+  if (subVal !== null && subVal !== undefined && subVal !== '') {
+    const num = parseFloat(subVal);
+    if (!isNaN(num)) return num;
+  }
+  return 0;
+}
 
 export default function HistoryPage() {
   const { id } = useParams();
@@ -115,37 +127,38 @@ export default function HistoryPage() {
   }
 
   // Filter completed runs for chart
-  const completedRuns = runs.filter(r => r.status === 'completed' && r.overall_score !== null);
+  const completedRuns = runs.filter(r => r.status === 'completed' && parseScore(r.overall_score, r.sub_scores?.overall_score) > 0);
   
   // Format chart data (chronological: oldest to newest)
   const chartData = [...completedRuns].reverse().map((run, idx) => {
     const date = new Date(run.completed_at || run.started_at);
     const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const sub = typeof run.sub_scores === 'object' && run.sub_scores ? run.sub_scores : {};
 
     return {
       runIndex: idx + 1,
       runId: run.id.substring(0, 8),
       fullId: run.id,
       timestamp: `${dateStr} ${timeStr}`,
-      overall_score: parseFloat(run.overall_score || 0),
-      code_quality: parseFloat(run.code_quality_score || 0),
-      maintainability: parseFloat(run.maintainability_score || 0),
-      complexity: parseFloat(run.complexity_score || 0),
-      architecture: parseFloat(run.architecture_score || 0),
-      testing: parseFloat(run.testing_score || 0),
-      security: parseFloat(run.security_score || 0),
-      documentation: parseFloat(run.documentation_score || 0),
+      overall_score: parseScore(run.overall_score, sub.overall_score),
+      code_quality: parseScore(run.code_quality_score, sub.code_quality),
+      maintainability: parseScore(run.maintainability_score, sub.maintainability),
+      complexity: parseScore(run.complexity_score, sub.complexity),
+      architecture: parseScore(run.architecture_score, sub.architecture),
+      testing: parseScore(run.testing_score, sub.testing),
+      security: parseScore(run.security_score, sub.security),
+      documentation: parseScore(run.documentation_score, sub.documentation),
       score_band: run.score_band || 'N/A',
       total_loc: run.total_loc || 0,
     };
   });
 
   // Telemetry Calculations
-  const latestRun = completedRuns[0];
-  const previousRun = completedRuns[1];
-  const latestScore = latestRun ? parseFloat(latestRun.overall_score || 0) : null;
-  const prevScore = previousRun ? parseFloat(previousRun.overall_score || 0) : null;
+  const latestCompletedRun = completedRuns[0];
+  const previousCompletedRun = completedRuns[1];
+  const latestScore = latestCompletedRun ? parseScore(latestCompletedRun.overall_score, latestCompletedRun.sub_scores?.overall_score) : null;
+  const prevScore = previousCompletedRun ? parseScore(previousCompletedRun.overall_score, previousCompletedRun.sub_scores?.overall_score) : null;
   
   let scoreDelta = null;
   if (latestScore !== null && prevScore !== null) {
@@ -153,8 +166,10 @@ export default function HistoryPage() {
   }
 
   const avgScore = completedRuns.length > 0
-    ? (completedRuns.reduce((sum, r) => sum + parseFloat(r.overall_score || 0), 0) / completedRuns.length).toFixed(1)
+    ? (completedRuns.reduce((sum, r) => sum + parseScore(r.overall_score, r.sub_scores?.overall_score), 0) / completedRuns.length).toFixed(1)
     : '—';
+
+  const mostRecentRun = runs[0];
 
   return (
     <div className="space-y-8 pb-12">
@@ -218,6 +233,25 @@ export default function HistoryPage() {
         </div>
       </div>
 
+      {/* Failed Run Warning Callout */}
+      {mostRecentRun?.status === 'failed' && (
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-xs text-red-300 flex items-start gap-3 shadow-lg">
+          <span className="text-xl">⚠️</span>
+          <div className="flex-1 space-y-1">
+            <div className="flex items-center justify-between">
+              <p className="font-bold text-red-200 text-sm">Latest Analysis Run Failed</p>
+              <span className="text-[10px] text-red-400 font-mono">Run ID: {mostRecentRun.id.substring(0, 8)}</span>
+            </div>
+            <p className="font-mono text-[11px] text-red-300/90 bg-[#1a0808] p-2.5 rounded border border-red-500/20 break-all leading-relaxed">
+              {mostRecentRun.error_message || 'Failed to clone repository or execute static code analysis.'}
+            </p>
+            <p className="text-[11px] text-slate-400 pt-1">
+              Check repository URL or permissions. Showing historical score trend graph from previous successful run below.
+            </p>
+          </div>
+        </div>
+      )}
+
       {error ? (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center text-red-300">
           <p className="text-lg font-bold">⚠ Error Loading History</p>
@@ -247,7 +281,7 @@ export default function HistoryPage() {
             <div className="card">
               <span className="text-xs text-slate-500 uppercase tracking-wider">Total Runs</span>
               <p className="mt-2 text-3xl font-extrabold text-indigo-400">{runs.length}</p>
-              <span className="text-[10px] text-slate-600">{completedRuns.length} Completed Runs</span>
+              <span className="text-[10px] text-slate-600">{completedRuns.length} Successful Runs</span>
             </div>
 
             <div className="card">
@@ -258,7 +292,7 @@ export default function HistoryPage() {
                 </p>
                 <span className="text-xs text-slate-500">/ 100</span>
               </div>
-              <span className="text-[10px] text-slate-600">{latestRun?.score_band || 'Needs Analysis'}</span>
+              <span className="text-[10px] text-slate-600">{latestCompletedRun?.score_band || 'Needs Analysis'}</span>
             </div>
 
             <div className="card">
@@ -315,10 +349,20 @@ export default function HistoryPage() {
               </div>
             </div>
 
-            {chartData.length < 2 ? (
+            {chartData.length === 0 ? (
               <div className="py-12 text-center text-slate-500 bg-[#080814] rounded-lg border border-dashed border-[#1e1e3a]">
-                <p className="text-sm font-semibold">Need at least 2 completed analysis runs to visualize trend chart.</p>
+                <p className="text-sm font-semibold">No successful analysis runs available to visualize trend chart.</p>
                 <p className="mt-1 text-xs">Run a new analysis to start recording score history progression over time.</p>
+              </div>
+            ) : chartData.length === 1 ? (
+              <div className="py-8 px-4 text-center bg-[#080814] rounded-lg border border-[#1e1e3a] space-y-2">
+                <p className="text-xs text-indigo-300 font-semibold">1 Completed Analysis Run Recorded ({chartData[0].timestamp})</p>
+                <div className="flex justify-center items-center gap-4 text-sm font-bold text-slate-200">
+                  <span>Overall: <strong className="text-indigo-400">{chartData[0].overall_score}</strong></span>
+                  <span>Architecture: <strong className="text-emerald-400">{chartData[0].architecture}</strong></span>
+                  <span>Security: <strong className="text-violet-400">{chartData[0].security}</strong></span>
+                </div>
+                <p className="text-[11px] text-slate-500 pt-1">Run a 2nd analysis to generate a line trend graph over time.</p>
               </div>
             ) : (
               <div className="h-72 w-full pt-4">
@@ -352,7 +396,7 @@ export default function HistoryPage() {
                       strokeWidth={3}
                       fillOpacity={1}
                       fill="url(#scoreColor)"
-                      dot={{ r: 4, fill: '#818cf8', strokeWidth: 2, stroke: '#1e1e3a' }}
+                      dot={{ r: 5, fill: '#818cf8', strokeWidth: 2, stroke: '#1e1e3a' }}
                       activeDot={{ r: 7, fill: '#a5b4fc', stroke: '#6366f1', strokeWidth: 3 }}
                     />
                   </AreaChart>
@@ -393,7 +437,8 @@ export default function HistoryPage() {
                         ? `${Math.round(run.duration_seconds)}s`
                         : '—';
 
-                      const scoreVal = run.overall_score !== null ? parseFloat(run.overall_score) : null;
+                      const scoreVal = parseScore(run.overall_score, run.sub_scores?.overall_score);
+                      const isCompleted = run.status === 'completed';
 
                       return (
                         <tr key={run.id} className="hover:bg-[#12122c] transition-colors">
@@ -410,7 +455,7 @@ export default function HistoryPage() {
                             {durationSec}
                           </td>
                           <td className="py-3 px-4">
-                            {scoreVal !== null ? (
+                            {isCompleted && scoreVal > 0 ? (
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-slate-100">{scoreVal}</span>
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${getBandStyle(run.score_band)}`}>
@@ -418,19 +463,27 @@ export default function HistoryPage() {
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-slate-500">—</span>
+                              <span className="text-red-400 font-mono text-[11px]" title={run.error_message}>
+                                {run.status === 'failed' ? 'Failed' : '—'}
+                              </span>
                             )}
                           </td>
                           <td className="py-3 px-4 text-slate-300">
                             {run.total_loc ? run.total_loc.toLocaleString() : '—'}
                           </td>
                           <td className="py-3 px-4 text-right">
-                            <button
-                              onClick={() => handleOpenDetails(run.id)}
-                              className="px-2.5 py-1 text-[11px] font-semibold text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 rounded border border-indigo-500/30 transition-all"
-                            >
-                              View Details
-                            </button>
+                            {isCompleted ? (
+                              <button
+                                onClick={() => handleOpenDetails(run.id)}
+                                className="px-2.5 py-1 text-[11px] font-semibold text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 rounded border border-indigo-500/30 transition-all"
+                              >
+                                View Details
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-red-400 font-mono" title={run.error_message}>
+                                Error Logged
+                              </span>
+                            )}
                           </td>
                         </tr>
                       );
