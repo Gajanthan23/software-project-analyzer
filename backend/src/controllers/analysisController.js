@@ -22,6 +22,11 @@ const { callAnalyzer }     = require('../services/analyzerService');
 const githubService        = require('../services/githubService');
 const logger = require('../utils/logger');
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUuid(id) {
+  return typeof id === 'string' && UUID_REGEX.test(id);
+}
+
 const analysisController = {
   /**
    * POST /api/projects/:id/analyze
@@ -258,6 +263,10 @@ const analysisController = {
   listRuns: async (req, res, next) => {
     try {
       const { id: projectId } = req.params;
+      if (!projectId || projectId === 'undefined' || !isValidUuid(projectId)) {
+        return res.status(400).json({ status: 'error', message: 'Valid project ID is required.' });
+      }
+
       const project = await projectModel.findByIdAndUser(projectId, req.user.id);
       if (!project) {
         return res.status(404).json({ status: 'error', message: 'Project not found.' });
