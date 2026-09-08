@@ -15,6 +15,7 @@ router.use(requireAuth);
 
 router.post('/', projectController.createProject);
 router.get('/', projectController.getProjects);
+router.post('/compare', projectController.compareProjects);
 router.get('/:id', projectController.getProjectById);
 
 // Phase 7 debug endpoint (protected, dev-only)

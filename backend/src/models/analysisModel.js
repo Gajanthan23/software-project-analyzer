@@ -749,7 +749,107 @@ const analysisModel = {
       recommendations: recsRes.rows,
     };
   },
+
+  /**
+   * Fetch side-by-side comparison metrics and scores for a list of project IDs (Phase 22).
+   */
+  getComparisonDataForProjects: async (projectIds, userId) => {
+    const results = [];
+    for (const pid of projectIds) {
+      // First check project exists and belongs to user
+      const pRes = await db.query(
+        `SELECT id, name, owner, repo_url, default_branch, languages FROM projects WHERE id = $1 AND user_id = $2`,
+        [pid, userId]
+      );
+      if (pRes.rows.length === 0) continue;
+      const project = pRes.rows[0];
+
+      // Get latest completed analysis run
+      const runRes = await db.query(
+        `SELECT id, started_at, completed_at, status
+         FROM analysis_runs
+         WHERE project_id = $1 AND status = 'completed'
+         ORDER BY started_at DESC
+         LIMIT 1`,
+        [pid]
+      );
+      
+      const latestRun = runRes.rows[0];
+      if (!latestRun) {
+        results.push({
+          project_id: project.id,
+          name: project.name,
+          owner: project.owner,
+          repo_url: project.repo_url,
+          primary_language: project.primary_language || 'Unknown',
+          has_analysis: false,
+          overall_score: null,
+          scores: null,
+          metrics: null
+        });
+        continue;
+      }
+
+      const runId = latestRun.id;
+
+      // Fetch scores and metrics for latest run
+      const scoresRes = await db.query(`SELECT * FROM quality_scores WHERE run_id = $1`, [runId]);
+      const metricsRes = await db.query(`SELECT * FROM code_metrics WHERE run_id = $1`, [runId]);
+      const complexityRes = await db.query(`SELECT * FROM complexity_metrics WHERE run_id = $1`, [runId]);
+      const archRes = await db.query(`SELECT * FROM architecture_metrics WHERE run_id = $1`, [runId]);
+      const gitRes = await db.query(`SELECT * FROM git_metrics WHERE run_id = $1`, [runId]);
+      const secRes = await db.query(`SELECT COUNT(*) AS count FROM security_findings WHERE run_id = $1`, [runId]);
+
+      const scores = scoresRes.rows[0] || {};
+      const sub = scores.sub_scores || {};
+      const metrics = metricsRes.rows[0] || {};
+      const complexity = complexityRes.rows[0] || {};
+      const arch = archRes.rows[0] || {};
+      const git = gitRes.rows[0] || {};
+      const securityCount = parseInt(secRes.rows[0]?.count || 0, 10);
+
+      results.push({
+        project_id: project.id,
+        name: project.name,
+        owner: project.owner,
+        repo_url: project.repo_url,
+        has_analysis: true,
+        run_id: runId,
+        started_at: latestRun.started_at,
+        completed_at: latestRun.completed_at,
+        overall_score: parseFloat(scores.overall_score || 0),
+        score_band: scores.score_band || 'N/A',
+        scores: {
+          code_quality: parseFloat(sub.code_quality ?? scores.code_quality_score ?? 0),
+          maintainability: parseFloat(sub.maintainability ?? scores.maintainability_score ?? 0),
+          complexity: parseFloat(sub.complexity ?? scores.complexity_score ?? 0),
+          architecture: parseFloat(sub.architecture ?? scores.architecture_score ?? 0),
+          testing: parseFloat(sub.testing ?? scores.testing_score ?? 0),
+          security: parseFloat(sub.security ?? scores.security_score ?? 0),
+          documentation: parseFloat(sub.documentation ?? scores.documentation_score ?? 0),
+          overall: parseFloat(scores.overall_score || 0)
+        },
+        metrics: {
+          total_files: metrics.total_files || 0,
+          source_files: metrics.source_files || 0,
+          test_files: metrics.test_files || 0,
+          total_loc: metrics.total_loc || 0,
+          code_loc: metrics.code_loc || 0,
+          primary_language: metrics.primary_language || project.primary_language || 'Unknown',
+          dependency_count: metrics.dependency_count || 0,
+          avg_complexity: parseFloat(complexity.avg_complexity || 0),
+          max_complexity: complexity.max_complexity || 0,
+          detected_pattern: arch.detected_pattern || 'Flat',
+          confidence_score: arch.confidence_score || 0,
+          total_commits: git.total_commits || 0,
+          security_findings_count: securityCount
+        }
+      });
+    }
+    return results;
+  },
 };
 
 module.exports = analysisModel;
+
 

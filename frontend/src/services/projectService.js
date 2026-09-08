@@ -149,5 +149,13 @@ export const projectService = {
   getAnalysisRunDetails: async (id, runId) => {
     const response = await api.get(`/projects/${id}/analyses/${runId}`);
     return response.data.data;
+  },
+
+  /**
+   * Compare multiple projects side-by-side (Phase 22).
+   */
+  compareProjects: async (projectIds) => {
+    const response = await api.post('/projects/compare', { projectIds });
+    return response.data.data.projects;
   }
 };

@@ -8,6 +8,7 @@ const { parseGitHubUrl } = require('../utils/githubUrlParser');
 const githubService = require('../services/githubService');
 const repositoryDownloader = require('../services/repositoryDownloader');
 const projectModel = require('../models/projectModel');
+const analysisModel = require('../models/analysisModel');
 const logger = require('../utils/logger');
 const fs = require('fs');
 
@@ -163,6 +164,39 @@ const projectController = {
             workspace_cleaned_up: !existsAfterCleanup,
             workspace_path_used: usedWorkspacePath
           }
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * POST /api/projects/compare
+   * Side-by-side metric comparison across 2+ projects (Phase 22).
+   */
+  compareProjects: async (req, res, next) => {
+    try {
+      const { projectIds, analysisIds, ids } = req.body;
+      const targetIds = projectIds || analysisIds || ids;
+
+      if (!Array.isArray(targetIds) || targetIds.length === 0) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Please provide an array of projectIds to compare.'
+        });
+      }
+
+      // Limit max projects to 5 for UI performance
+      const selectedIds = targetIds.slice(0, 5);
+
+      const comparisonData = await analysisModel.getComparisonDataForProjects(selectedIds, req.user.id);
+
+      return res.status(200).json({
+        status: 'success',
+        results: comparisonData.length,
+        data: {
+          projects: comparisonData
         }
       });
     } catch (error) {
