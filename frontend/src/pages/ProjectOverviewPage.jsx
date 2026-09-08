@@ -89,6 +89,7 @@ export default function ProjectOverviewPage() {
   const security = latestData?.security;
   const testing = latestData?.testing;
   const architecture = latestData?.architecture;
+  const prediction = latestData?.prediction;
 
   return (
     <div className="space-y-8 animate-slide-up">
@@ -223,6 +224,74 @@ export default function ProjectOverviewPage() {
           <div className="text-4xl">📊</div>
           <p className="mt-3 text-sm font-semibold text-slate-300">No analysis data available yet</p>
           <p className="mt-1 text-xs text-slate-500">Click "Run Full Analysis" above to trigger static code parsing & multi-dimensional scoring.</p>
+        </div>
+      )}
+
+      {/* ── Phase 24 ML Maturity Prediction Card ───────────────────────────── */}
+      {scores && (
+        <div className="card p-6 border-purple-500/30 bg-gradient-to-r from-[#120e2e] via-[#161238] to-[#120e2e] relative overflow-hidden">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-1 max-w-xl">
+              <div className="flex items-center gap-2 mb-1">
+                <AnalysisTypeBadge type="prediction" />
+                <span className="text-[11px] font-semibold text-purple-300/80 uppercase tracking-wider">
+                  Phase 24 Machine Learning Engine
+                </span>
+              </div>
+              <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                Engineering Maturity Classification
+              </h2>
+              <p className="text-xs text-purple-300/70 italic">
+                "Model prediction — not an objective fact"
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4 bg-[#0c0a1f] p-4 rounded-xl border border-purple-500/20">
+              {prediction && prediction.status === 'completed' && prediction.prediction ? (
+                <div className="text-right">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">Predicted Maturity:</span>
+                    <span className="badge bg-purple-500/20 text-purple-200 border border-purple-500/40 text-sm px-3.5 py-1 font-bold uppercase tracking-wider">
+                      {prediction.prediction}
+                    </span>
+                  </div>
+                  {prediction.confidence && (
+                    <span className="text-[11px] text-purple-400 font-medium block mt-1">
+                      Confidence: {prediction.confidence}%
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="text-right">
+                  <span className="text-xs text-slate-400 font-medium block">
+                    {prediction?.message || 'Prediction model unavailable — train model via app/ml/train.py'}
+                  </span>
+                  <span className="text-[10px] text-slate-600 block mt-0.5">Model prediction unavailable</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Top Contributing Feature Factors */}
+          {prediction && prediction.top_contributing_features && prediction.top_contributing_features.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-purple-500/20">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                Top Contributing Model Feature Factors:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {prediction.top_contributing_features.map((feat) => (
+                  <div key={feat.feature} className="text-[11px] bg-[#1a153b] border border-purple-500/30 text-purple-200 px-2.5 py-1 rounded-md flex items-center gap-1.5">
+                    <span className="font-mono text-purple-300">{feat.feature}</span>
+                    <span className="text-slate-500">•</span>
+                    <span className="text-slate-400">Weight: {(feat.importance * 100).toFixed(1)}%</span>
+                    {feat.value !== undefined && (
+                      <span className="text-slate-400 font-semibold">({typeof feat.value === 'number' ? feat.value : feat.value})</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

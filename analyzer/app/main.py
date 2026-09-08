@@ -20,6 +20,7 @@ from app.analyzers.security import analyze_security
 from app.analyzers.architecture import analyze_architecture
 from app.analyzers.git_history import analyze_git_history
 from app.scoring import calculate_scores, generate_recommendations
+from app.ml.predict import predict_maturity
 
 app = FastAPI(
     title="Software Project Complexity & Quality Analyzer Engine",
@@ -191,7 +192,31 @@ def analyze(request: AnalysisRequest):
     if dependencies_data.get("total_dependency_count", 0) > 0:
         metrics_data["dependency_count"] = dependencies_data["total_dependency_count"]
 
-    # 13. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history, scores, recommendations
+    # 13. Phase 24 — Run ML maturity prediction engine
+    try:
+        prediction_data = predict_maturity(
+            metrics=metrics_data,
+            complexity=complexity_data,
+            duplication=duplication_data,
+            testing=testing_data,
+            documentation=documentation_data,
+            dependencies=dependencies_data,
+            security=security_data,
+            architecture=architecture_data,
+            git_history=git_history_data,
+            scores=scores_data
+        )
+    except Exception as exc:
+        prediction_data = {
+            "status": "unavailable",
+            "prediction": None,
+            "confidence": None,
+            "message": f"ML Prediction calculation failed: {str(exc)}",
+            "disclaimer": "Model prediction — not an objective fact",
+            "top_contributing_features": []
+        }
+
+    # 14. Build response — real values for repository, metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history, scores, recommendations, prediction
     return AnalysisResponse(
         status="success",
         repository_path=os.path.abspath(repo_path),
@@ -362,9 +387,6 @@ def analyze(request: AnalysisRequest):
         # ── Phase 19: REAL values ────────────────────────────────────────
         recommendations=recommendations_data,
 
-        # ── Phases 20–24: still not_implemented (Rule 4) ─────────────────
-        prediction={
-            "status": "not_implemented",
-            "message": "ML maturity prediction model arrives in Phase 24."
-        }
+        # ── Phase 24: REAL values ─────────────────────────────────────────
+        prediction=prediction_data
     )
