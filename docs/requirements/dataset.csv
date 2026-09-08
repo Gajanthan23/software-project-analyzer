@@ -1,0 +1,17 @@
+repo_name,repo_url,total_loc,code_loc,total_files,source_files,test_files,functions,classes,avg_complexity,max_complexity,duplication_percentage,test_file_ratio,dependency_count,documentation_score,security_findings_count,architecture_confidence,total_commits,overall_score,maturity_label
+expressjs/express,https://github.com/expressjs/express,21479,15815,213,50,91,0,0,1.16,23,12.41,0.0,99,75.0,5,65.0,1,73.19,Intermediate
+vercel/ms,https://github.com/vercel/ms,1360,1031,23,4,4,0,0,1.26,44,0.0,0.0,54,58.82,1,40.0,1,78.97,Intermediate
+lodash/lodash,https://github.com/lodash/lodash,52002,31516,65,20,7,0,0,1.81,1135,3.32,0.0,5906,67.0,17,40.0,1,68.61,Intermediate
+axios/axios,https://github.com/axios/axios,43965,35669,463,89,126,0,0,1.54,119,2.16,0.0,18237,88.64,12,85.0,1,83.69,Intermediate
+chalk/chalk,https://github.com/chalk/chalk,1361,948,29,6,8,0,0,1.32,8,1.27,0.0,92,65.0,0,40.0,1,79.48,Advanced
+tj/commander.js,https://github.com/tj/commander.js,19595,14419,219,42,117,0,0,1.14,21,10.69,0.0,2747,90.0,1,40.0,1,72.93,Intermediate
+pallets/flask,https://github.com/pallets/flask,18383,13336,236,36,48,1462,160,1.5,23,5.74,0.0,353,78.83,4,40.0,1,74.15,Intermediate
+psf/requests,https://github.com/psf/requests,12057,9066,130,22,15,711,96,2.0,21,5.05,0.0,116,73.12,7,40.0,1,71.75,Intermediate
+Nirukshith/Filmism,https://github.com/Nirukshith/Filmism,4003,3446,53,31,0,0,0,2.54,11,20.57,0.0,6067,28.35,0,92.0,1,58.89,Intermediate
+nirsanth23/fuelpass-management-system,https://github.com/nirsanth23/fuelpass-management-system,8481,7672,52,41,0,0,0,2.27,43,19.88,0.0,54,26.08,0,84.0,1,58.82,Intermediate
+bottlepy/bottle,https://github.com/bottlepy/bottle,9260,7510,219,2,29,946,128,1.99,32,2.49,0.0,62,65.24,4,65.0,1,78.66,Intermediate
+sindresorhus/is,https://github.com/sindresorhus/is,5479,4447,19,3,2,0,0,1.56,196,0.54,0.0,76,52.49,0,40.0,1,77.54,Advanced
+pypa/sampleproject,https://github.com/pypa/sampleproject,77,37,12,3,2,6,1,1.0,1,0.0,0.0,42,50.0,0,40.0,1,81.5,Advanced
+mde/ejs,https://github.com/mde/ejs,4179,3133,124,12,4,0,0,1.6,21,5.01,0.0,63,70.0,15,65.0,1,76.84,Intermediate
+visionmedia/debug,https://github.com/visionmedia/debug,1074,700,13,7,0,0,0,1.81,9,0.0,0.0,64,65.0,0,40.0,1,69.5,Intermediate
+chjj/marked,https://github.com/chjj/marked,29649,25925,476,22,16,0,0,2.16,55,4.7,0.0,8968,73.45,59,40.0,1,66.13,Intermediate
