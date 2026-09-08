@@ -273,13 +273,7 @@ export default function ProjectOverviewPage() {
                       />
                     </div>
                   </div>
-                  {key === 'security' && (
-                    <p className="mt-2 text-[11px] font-medium text-emerald-400/90 leading-tight">
-                      {val === 100 || (security?.total_findings || 0) === 0
-                        ? "0 static security issues or hardcoded secrets detected in repository source files."
-                        : `${security?.total_findings || 0} static security finding(s) detected.`}
-                    </p>
-                  )}
+                  {/* Clean uniform sub-score card layout matching all other sub-scores */}
                 </Link>
               );
             })}
@@ -315,7 +309,7 @@ export default function ProjectOverviewPage() {
               <p className="mt-2 text-2xl font-bold text-amber-400">{security?.total_findings || 0}</p>
               <span className="text-[10px] text-emerald-400 font-medium">
                 {(security?.total_findings || 0) === 0
-                  ? "0 static security issues or hardcoded secrets detected in repository source files."
+                  ? "No static issues detected"
                   : "Static Scan Issues"}
               </span>
             </div>
