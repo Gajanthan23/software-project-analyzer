@@ -1,87 +1,111 @@
 # =============================================================================
-# Software Project Complexity & Quality Analyzer
-# docker-compose.yml — SERVICE STUB (Phase 1 placeholder)
-#
-# Full service configuration will be added in Phase 27 (Docker).
-# Each service block below documents WHAT will go here and WHY.
+# Software Project Complexity, Architecture & Quality Analyzer
+# docker-compose.yml — Phase 27 Full Multi-Container Orchestration
 # =============================================================================
-
-version: "3.9"
 
 services:
+  # ---------------------------------------------------------------------------
+  # 1. PostgreSQL Database Service (Phase 4 & Phase 27)
+  # Stores users, projects, analysis runs, metrics, findings, predictions
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: analyzer_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-analyzer_db}
+      POSTGRES_USER: ${POSTGRES_USER:-analyzer_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-analyzer_secret_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-analyzer_user} -d ${POSTGRES_DB:-analyzer_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # ---------------------------------------------------------------------------
-  # frontend
-  # React + Vite application (Phase 2)
-  # Serves the user-facing dashboard on port 5173 (dev) / 80 (prod).
-  # Communicates with the backend via REST API.
+  # 2. Python FastAPI Analyzer Microservice (Phase 8-24 & Phase 27)
+  # Multi-dimensional static analysis engine + ML maturity prediction model
   # ---------------------------------------------------------------------------
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "5173:5173"
-  #   environment:
-  #     - VITE_API_URL=http://backend:4000
-  #   depends_on:
-  #     - backend
+  analyzer:
+    build:
+      context: ./analyzer
+      dockerfile: Dockerfile
+    container_name: analyzer_python
+    restart: unless-stopped
+    environment:
+      MAX_REPO_SIZE_MB: ${MAX_REPO_SIZE_MB:-500}
+      ANALYSIS_TIMEOUT_SECONDS: ${ANALYSIS_TIMEOUT_SECONDS:-300}
+      WORKSPACE_TMP_DIR: ${WORKSPACE_TMP_DIR:-/tmp/software-analyzer-workspaces}
+    ports:
+      - "8000:8000"
+    volumes:
+      - analysis_tmp:/tmp/software-analyzer-workspaces
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # ---------------------------------------------------------------------------
-  # backend
-  # Node.js + Express REST API (Phase 3)
-  # Handles auth, projects, analysis orchestration, DB access.
-  # Communicates with the analyzer service and PostgreSQL.
+  # 3. Node.js + Express REST API Backend Service (Phase 3-25 & Phase 27)
+  # Orchestrates auth, project management, DB access, and report generation
   # ---------------------------------------------------------------------------
-  # backend:
-  #   build: ./backend
-  #   ports:
-  #     - "4000:4000"
-  #   environment:
-  #     - DATABASE_URL=postgres://analyzer_user:changeme@postgres:5432/analyzer_db
-  #     - JWT_SECRET=changeme
-  #     - GITHUB_TOKEN=
-  #     - PYTHON_ANALYZER_URL=http://analyzer:8000
-  #   depends_on:
-  #     - postgres
-  #     - analyzer
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: analyzer_backend
+    restart: unless-stopped
+    environment:
+      PORT: ${PORT:-4000}
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://analyzer_user:analyzer_secret_password@postgres:5432/analyzer_db}
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_analyzer_2026_phase27}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      ANALYZER_URL: ${ANALYZER_URL:-http://analyzer:8000}
+      PYTHON_ANALYZER_URL: ${PYTHON_ANALYZER_URL:-http://analyzer:8000}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      WORKSPACE_TMP_DIR: ${WORKSPACE_TMP_DIR:-/tmp/software-analyzer-workspaces}
+    ports:
+      - "4000:4000"
+    volumes:
+      - analysis_tmp:/tmp/software-analyzer-workspaces
+    depends_on:
+      postgres:
+        condition: service_healthy
+      analyzer:
+        condition: service_healthy
+    command: sh -c "npm run db:init && npm start"
 
   # ---------------------------------------------------------------------------
-  # analyzer
-  # Python + FastAPI analysis service (Phase 8)
-  # Accepts a repository path, runs all analysis modules, returns JSON results.
-  # Runs in an isolated environment; NEVER executes repository code.
+  # 4. React + Vite Frontend Web App Service (Phase 2 & Phase 27)
+  # Serves the user dashboard, compare page, recommendations, & PDF download
   # ---------------------------------------------------------------------------
-  # analyzer:
-  #   build: ./analyzer
-  #   ports:
-  #     - "8000:8000"
-  #   volumes:
-  #     - analysis_tmp:/tmp/analysis   # Isolated temporary workspace
-  #   environment:
-  #     - MAX_REPO_SIZE_MB=500
-  #     - ANALYSIS_TIMEOUT_SECONDS=300
-
-  # ---------------------------------------------------------------------------
-  # postgres
-  # PostgreSQL 15 database (Phase 4)
-  # Stores users, projects, analysis runs, metrics, findings, predictions.
-  # ---------------------------------------------------------------------------
-  # postgres:
-  #   image: postgres:15-alpine
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     - POSTGRES_DB=analyzer_db
-  #     - POSTGRES_USER=analyzer_user
-  #     - POSTGRES_PASSWORD=changeme   # Override with a secret in production
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #     - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
-  #     - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    container_name: analyzer_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "5173:80"
+    depends_on:
+      - backend
 
 # =============================================================================
-# Volumes (Phase 27)
+# Persistent Data Volumes (Phase 27)
 # =============================================================================
-# volumes:
-#   postgres_data:       # Persists database data across restarts
-#   analysis_tmp:        # Shared temporary workspace for repository clones
-#                        # Cleaned up after every analysis run
+volumes:
+  postgres_data:
+    driver: local
+  analysis_tmp:
+    driver: local

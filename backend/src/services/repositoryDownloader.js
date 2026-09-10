@@ -66,7 +66,7 @@ const repositoryDownloader = {
    */
   createWorkspace: async () => {
     const uniqueId = crypto.randomUUID();
-    const baseTmpDir = path.join(os.tmpdir(), 'software-analyzer-workspaces');
+    const baseTmpDir = process.env.WORKSPACE_TMP_DIR || path.join(os.tmpdir(), 'software-analyzer-workspaces');
     
     if (!fs.existsSync(baseTmpDir)) {
       fs.mkdirSync(baseTmpDir, { recursive: true });
