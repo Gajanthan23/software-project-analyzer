@@ -14,4 +14,19 @@ export default defineConfig({
       },
     },
   },
+  test: {
+    // Use jsdom to simulate browser DOM environment
+    environment: 'jsdom',
+    // Global test APIs (describe, it, expect) without explicit imports
+    globals: true,
+    // Run setup file before each test suite
+    setupFiles: ['./src/test/setup.js'],
+    // Coverage configuration
+    coverage: {
+      reporter: ['text', 'html'],
+      include: ['src/**/*.{js,jsx}'],
+      exclude: ['src/main.jsx', 'src/test/**'],
+    },
+  },
 })
+

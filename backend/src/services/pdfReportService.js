@@ -60,6 +60,7 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
   const doc = new PDFDocument({
     size: 'A4',
     margin: 40,
+    compress: false,
     info: {
       Title: `Software Quality Analysis Report - ${project.name}`,
       Author: 'Software Project Quality Analyzer',
@@ -218,12 +219,15 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
   // 7. ML Maturity Prediction Box
   drawSectionTitle(doc, '5. MACHINE LEARNING MATURITY PREDICTION');
 
-  // Compute prediction from real stored metrics (mirrors analysisController logic)
-  let predLabel = 'Intermediate';
-  let predConfidence = 82.0;
-  if (scores && metrics) {
+  // Compute prediction from real stored metrics or use runData.prediction
+  let predLabel = runData.prediction?.prediction || 'Intermediate';
+  let predConfidence = runData.prediction?.confidence
+    ? (runData.prediction.confidence > 1 ? runData.prediction.confidence : runData.prediction.confidence * 100)
+    : 82.0;
+
+  if (!runData.prediction?.prediction && scores) {
     const overallScore = parseFloat(scores.overall_score || 0);
-    const testFiles = parseInt(metrics.test_files || 0, 10);
+    const testFiles = parseInt(metrics?.test_files || testing?.test_files_count || 0, 10);
     const secCount = runData.security ? (runData.security.total_findings || 0) : 0;
     const dupPct = runData.duplication ? (runData.duplication.duplication_percentage || 0) : 0;
 

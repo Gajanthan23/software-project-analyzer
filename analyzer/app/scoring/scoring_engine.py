@@ -153,6 +153,8 @@ def calculate_architecture_score(architecture: Dict[str, Any]) -> float:
     """
     pattern = architecture.get("detected_pattern", "Flat / Unstructured Architecture")
     confidence = float(architecture.get("confidence_score", 40.0) or 40.0)
+    if confidence <= 1.0:
+        confidence *= 100.0
 
     score = confidence
 
