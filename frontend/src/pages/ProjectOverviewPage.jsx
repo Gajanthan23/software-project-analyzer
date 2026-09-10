@@ -46,6 +46,28 @@ export default function ProjectOverviewPage() {
     }
   };
 
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadPdfReport = async () => {
+    try {
+      setDownloadingPdf(true);
+      const blob = await projectService.downloadLatestReport(id);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `analysis-report-${project?.name || 'repo'}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('PDF report download error:', err);
+      setError('Failed to download PDF analysis report.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const handleRunAnalysis = async () => {
     try {
       setAnalyzing(true);
@@ -149,6 +171,27 @@ export default function ProjectOverviewPage() {
                 <p className="text-base font-bold text-indigo-400">🍴 {project.forks_count}</p>
               </div>
             </div>
+
+            {scores && (
+              <button
+                onClick={handleDownloadPdfReport}
+                disabled={downloadingPdf}
+                className="px-4 py-2.5 rounded-lg font-semibold text-xs border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-all flex items-center justify-center gap-2 shadow-sm"
+                title="Download Phase 25 Section 27 PDF Report"
+              >
+                {downloadingPdf ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <span>📄</span>
+                    Download Report
+                  </>
+                )}
+              </button>
+            )}
 
             <button
               onClick={handleRunAnalysis}

@@ -20,6 +20,7 @@ const analysisModel = require('../models/analysisModel');
 const repositoryDownloader = require('../services/repositoryDownloader');
 const { callAnalyzer }     = require('../services/analyzerService');
 const githubService        = require('../services/githubService');
+const { generateAnalysisPdfReport } = require('../services/pdfReportService');
 const logger = require('../utils/logger');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -673,6 +674,67 @@ const analysisController = {
         status: 'success',
         data: runDetails,
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/latest/report
+   * Streams a PDF software analysis report for the project's latest run.
+   */
+  downloadLatestReport: async (req, res, next) => {
+    try {
+      const { id: projectId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const runs = await analysisModel.getRunsForProject(projectId);
+      const completedRuns = runs.filter(r => r.status === 'completed');
+      if (completedRuns.length === 0) {
+        return res.status(404).json({ status: 'error', message: 'No completed analysis run found for this project.' });
+      }
+
+      const latestRunId = completedRuns[0].id;
+      const runDetails = await analysisModel.getRunDetailsById(projectId, latestRunId);
+      if (!runDetails) {
+        return res.status(404).json({ status: 'error', message: 'Analysis run details not found.' });
+      }
+
+      const filename = `analysis-report-${project.name.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}-${latestRunId.slice(0, 8)}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      generateAnalysisPdfReport({ project, runData: runDetails }, res);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/projects/:id/analyses/:analysisId/report
+   * Streams a PDF software analysis report for a specific historical run ID.
+   */
+  downloadRunReport: async (req, res, next) => {
+    try {
+      const { id: projectId, analysisId } = req.params;
+      const project = await projectModel.findByIdAndUser(projectId, req.user.id);
+      if (!project) {
+        return res.status(404).json({ status: 'error', message: 'Project not found.' });
+      }
+
+      const runDetails = await analysisModel.getRunDetailsById(projectId, analysisId);
+      if (!runDetails) {
+        return res.status(404).json({ status: 'error', message: 'Analysis run not found.' });
+      }
+
+      const filename = `analysis-report-${project.name.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}-${analysisId.slice(0, 8)}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      generateAnalysisPdfReport({ project, runData: runDetails }, res);
     } catch (error) {
       next(error);
     }

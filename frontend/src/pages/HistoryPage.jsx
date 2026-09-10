@@ -115,6 +115,24 @@ export default function HistoryPage() {
     }
   };
 
+  const handleDownloadRunPdf = async (runId) => {
+    if (!selectedProjectId) return;
+    try {
+      const blob = await projectService.downloadRunReport(selectedProjectId, runId);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `analysis-report-${selectedProjectId.slice(0, 8)}-${runId.slice(0, 8)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('PDF report download error:', err);
+      alert('Failed to download PDF report for this run.');
+    }
+  };
+
   const activeProject = projects.find(p => p.id === selectedProjectId);
 
   if (loading && projects.length === 0) {
@@ -473,12 +491,21 @@ export default function HistoryPage() {
                           </td>
                           <td className="py-3 px-4 text-right">
                             {isCompleted ? (
-                              <button
-                                onClick={() => handleOpenDetails(run.id)}
-                                className="px-2.5 py-1 text-[11px] font-semibold text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 rounded border border-indigo-500/30 transition-all"
-                              >
-                                View Details
-                              </button>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleDownloadRunPdf(run.id)}
+                                  className="px-2.5 py-1 text-[11px] font-semibold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded border border-emerald-500/30 transition-all flex items-center gap-1"
+                                  title="Download PDF Report"
+                                >
+                                  📄 PDF
+                                </button>
+                                <button
+                                  onClick={() => handleOpenDetails(run.id)}
+                                  className="px-2.5 py-1 text-[11px] font-semibold text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 rounded border border-indigo-500/30 transition-all"
+                                >
+                                  View Details
+                                </button>
+                              </div>
                             ) : (
                               <span className="text-[10px] text-red-400 font-mono" title={run.error_message}>
                                 Error Logged

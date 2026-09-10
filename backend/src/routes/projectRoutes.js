@@ -35,6 +35,8 @@ router.get('/:id/analyses/latest/architecture', analysisController.getLatestArch
 router.get('/:id/analyses/latest/git-history',   analysisController.getLatestGit);
 router.get('/:id/analyses/latest/scores',        analysisController.getLatestScores);
 router.get('/:id/analyses/latest/recommendations',analysisController.getLatestRecommendations);
+router.get('/:id/analyses/latest/report',          analysisController.downloadLatestReport);
+router.get('/:id/analyses/:analysisId/report',     analysisController.downloadRunReport);
 router.get('/:id/analyses/:analysisId',          analysisController.getAnalysisById);
 
 module.exports = router;

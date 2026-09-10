@@ -157,5 +157,21 @@ export const projectService = {
   compareProjects: async (projectIds) => {
     const response = await api.post('/projects/compare', { projectIds });
     return response.data.data.projects;
+  },
+
+  /**
+   * Download PDF analysis report for latest completed run (Phase 25).
+   */
+  downloadLatestReport: async (id) => {
+    const response = await api.get(`/projects/${id}/analyses/latest/report`, { responseType: 'blob' });
+    return response.data;
+  },
+
+  /**
+   * Download PDF analysis report for a specific historical run ID (Phase 25).
+   */
+  downloadRunReport: async (id, runId) => {
+    const response = await api.get(`/projects/${id}/analyses/${runId}/report`, { responseType: 'blob' });
+    return response.data;
   }
 };
