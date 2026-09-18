@@ -1,17 +1,12 @@
 # Software Project Complexity & Quality Analyzer
 
-> A full-stack application that accepts a public GitHub repository URL and produces
-> a comprehensive software-engineering assessment — measuring code complexity,
-> maintainability, testing practices, documentation, security findings, and
-> architectural patterns — then surfaces results in an interactive dashboard.
+> A full-stack software analysis platform that accepts any public GitHub repository URL and produces a comprehensive software engineering assessment — measuring cyclomatic complexity, code quality, test coverage, documentation completeness, security vulnerabilities, dependencies, architectural patterns, git contributor statistics, and ML maturity prediction — surfacing insights via an interactive dashboard and exportable PDF reports.
 
 ---
 
-## Purpose
+## 🎯 Purpose & Design Classification
 
-GitHub shows *what* languages a project uses. This system answers the deeper
-questions:
-
+GitHub displays *what* languages a project uses. This platform answers the deeper questions:
 - **How complex** is the codebase?
 - **How maintainable** is it over time?
 - **How well-tested** is the project?
@@ -20,148 +15,161 @@ questions:
 - **What architectural pattern is in use?**
 - **How has the project evolved** through its Git history?
 
-Every metric is clearly labelled as one of three types:
+Every metric in the platform is strictly classified into one of three categories (Section 42):
 
-| Type | Meaning | Example |
-|------|---------|---------|
-| **FACT** | Directly measured from the repository | Lines of code, file count |
-| **HEURISTIC** | Rule-based interpretation | Documentation score, architecture pattern |
-| **ML PREDICTION** | Output of a trained model | Predicted engineering maturity |
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18, Vite, React Router, Axios, Recharts, Tailwind CSS |
-| Backend | Node.js, Express.js, JWT, bcrypt |
-| Database | PostgreSQL 15 |
-| Analyzer | Python 3.11, FastAPI, Pandas, NumPy, Scikit-learn, radon, lizard, bandit |
-| Infrastructure | Docker Compose, GitHub Actions |
+| Category | Definition | Metrics / Examples |
+| :--- | :--- | :--- |
+| **FACT** | Measured directly from repository files with deterministic algorithms | Lines of Code (LOC), file counts, cyclomatic complexity (Radon/Lizard), code duplication %, test file count, dependency list, commit author count |
+| **HEURISTIC** | Rule-based interpretations derived from pattern detection | Documentation completeness score, security findings (Bandit/regex), architecture pattern classification, quality sub-scores (0-100), rule-based recommendations |
+| **ML PREDICTION** | Output from a trained machine learning model based on extracted feature vectors | Predicted engineering maturity tier (`Beginner`, `Intermediate`, `Advanced`), prediction confidence score, feature importance contributions |
 
 ---
 
-## Repository Structure
+## 🏗️ Architecture Overview
+
+The application follows a decoupled microservices architecture:
 
 ```
-software-project-analyzer/
-│
-├── frontend/                   # React + Vite user-facing application
-│   └── src/
-│       ├── components/         # Reusable UI components
-│       ├── pages/              # Route-level page components
-│       ├── services/           # Axios API client modules
-│       ├── hooks/              # Custom React hooks
-│       └── utils/              # Helper functions and constants
-│
-├── backend/                    # Node.js + Express REST API
-│   └── src/
-│       ├── controllers/        # Request handlers (thin layer, delegates to services)
-│       ├── routes/             # Express route definitions
-│       ├── services/           # Business logic (auth, GitHub, analysis orchestration)
-│       ├── middleware/         # JWT auth, rate limiting, error handling
-│       ├── models/             # Database query functions (no ORM, plain SQL via pg)
-│       └── utils/              # Validation, helpers, logger
-│
-├── analyzer/                   # Python FastAPI analysis micro-service
-│   └── app/
-│       ├── analyzers/          # Individual analysis modules:
-│       │   ├── repository.py   #   → File counts, LOC, structure (FACTS)
-│       │   ├── complexity.py   #   → Cyclomatic complexity via radon/lizard (FACTS)
-│       │   ├── duplication.py  #   → Code duplication detection (FACTS)
-│       │   ├── testing.py      #   → Test file detection, coverage parsing (FACTS)
-│       │   ├── documentation.py#   → README / docs / comment analysis (HEURISTIC)
-│       │   ├── dependencies.py #   → Package file parsing (FACTS)
-│       │   ├── security.py     #   → Static security scan via bandit/semgrep (HEURISTIC)
-│       │   ├── architecture.py #   → Pattern detection heuristics (HEURISTIC)
-│       │   └── git_history.py  #   → Commit/contributor stats (FACTS)
-│       ├── scoring/
-│       │   └── scoring_engine.py # Weighted rule-based score calculation (HEURISTIC)
-│       └── ml/
-│           ├── train.py        # Model training pipeline (Decision Tree / RF / GBM)
-│           └── predict.py      # Inference wrapper (ML PREDICTION)
-│
-├── database/
-│   ├── schema.sql              # Table definitions (users, projects, analysis_runs, …)
-│   └── seed.sql                # Optional seed data for local development
-│
-├── docs/
-│   ├── requirements/           # Functional & non-functional requirements
-│   ├── architecture/           # Architecture decision records (ADRs)
-│   └── diagrams/               # System diagrams (draw.io / Mermaid sources)
-│
-├── .github/
-│   └── workflows/              # GitHub Actions CI/CD pipelines
-│
-├── docker-compose.yml          # Multi-service orchestration (Phase 27)
-├── .gitignore
-└── README.md                   # ← You are here
+                                 ┌────────────────────────┐
+                                 │ React 18 + Vite UI     │
+                                 │ (Port 5173 / Port 80)  │
+                                 └───────────┬────────────┘
+                                             │ HTTP / REST
+                                             ▼
+                                 ┌────────────────────────┐
+                                 │ Express REST API       │
+                                 │ (Port 4000)            │
+                                 └─────┬──────────────┬───┘
+                                       │              │
+                       SQL Queries (pg)│              │ HTTP / REST
+                                       ▼              ▼
+                       ┌──────────────────┐  ┌────────────────────────┐
+                       │ PostgreSQL 15    │  │ Python FastAPI Analyzer│
+                       │ (Port 5432)      │  │ (Port 8000)            │
+                       └──────────────────┘  └────────────────────────┘
 ```
 
----
-
-## Development Phases
-
-The project is built incrementally across 29 phases:
-
-| Phase | Description |
-|-------|-------------|
-| 1 | Project setup & repository structure ← **current** |
-| 2 | React frontend (Vite scaffold, routing, Tailwind) |
-| 3 | Node.js backend (Express, env config) |
-| 4 | PostgreSQL schema |
-| 5 | Authentication (register / login / JWT) |
-| 6 | GitHub API integration |
-| 7 | Repository downloading |
-| 8 | Python FastAPI analyzer service |
-| 9 | Repository metrics |
-| 10 | Complexity analysis |
-| 11 | Duplication analysis |
-| 12 | Testing analysis |
-| 13 | Documentation analysis |
-| 14 | Dependency analysis |
-| 15 | Security analysis |
-| 16 | Architecture analysis |
-| 17 | Git history analysis |
-| 18 | Scoring engine |
-| 19 | Recommendation engine |
-| 20 | Dashboard |
-| 21 | Analysis history |
-| 22 | Project comparison |
-| 23 | Dataset creation |
-| 24 | Machine learning |
-| 25 | PDF report |
-| 26 | Testing |
-| 27 | Docker |
-| 28 | CI/CD |
-| 29 | Deployment |
+For detailed architectural decision records (ADRs) and detailed sequence flow diagrams, see the [Architecture Documentation](docs/architecture/).
 
 ---
 
-## Getting Started (placeholder — will be expanded per phase)
+## 🛠️ Technology Stack
+
+- **Frontend:** React 18, Vite, React Router v6, Axios, Recharts, Tailwind CSS, Vitest
+- **Backend:** Node.js (v20), Express.js, PostgreSQL (`pg`), JWT Authentication, `bcryptjs`, PDFKit, Jest
+- **Python Analyzer:** Python 3.11, FastAPI, Radon, Lizard, Bandit, Pandas, NumPy, Scikit-Learn, Pytest
+- **Infrastructure:** Docker, Docker Compose, Nginx, Hadolint, GitHub Actions CI/CD
+
+---
+
+## 📦 Environment Setup
+
+### Option A: Running with Docker Compose (Recommended)
+
+Requires Docker Desktop installed.
 
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/software-project-analyzer.git
+# 1. Clone the repository
+git clone https://github.com/Gajanthan23/software-project-analyzer.git
 cd software-project-analyzer
 
-# Instructions for each service will appear in their respective folders
-# as they are implemented phase by phase.
+# 2. Start all services via Docker Compose
+docker compose up --build -d
+
+# 3. Access the web interface
+# Open browser at http://localhost (or http://localhost:5173)
+```
+
+To stop services:
+```bash
+docker compose down -v
 ```
 
 ---
 
-## Security Notes
+### Option B: Local Manual Setup (Without Docker)
 
-- Passwords are never stored as plain text (bcrypt)
-- All secrets are loaded from environment variables — never committed
-- Repository contents are treated as **untrusted input** at all times
-- The analyzer **never executes** repository code
-- Temporary workspaces are isolated and cleaned up after every analysis
+#### Prerequisites:
+- Node.js v20+ and npm
+- Python 3.11+ and pip
+- PostgreSQL 15 service running locally on port 5432
+
+#### Step 1: Database Initialization
+```bash
+# Set up PostgreSQL database schema and seed data
+cd backend
+npm install
+node src/utils/initDb.js
+```
+
+#### Step 2: Start Python Analyzer Engine
+```bash
+cd ../analyzer
+pip install -r requirements.txt
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+#### Step 3: Start Node.js Express Backend
+```bash
+cd ../backend
+npm start
+# Express running on http://localhost:4000
+```
+
+#### Step 4: Start React Frontend
+```bash
+cd ../frontend
+npm install
+npm run dev
+# React Vite server running on http://localhost:5173
+```
 
 ---
 
-## License
+## 🔐 Default Demo Credentials
 
-MIT — see [LICENSE](LICENSE) for details.
+- **Email:** `demo@example.com`
+- **Password:** `Password123!`
+
+---
+
+## 🧪 Running Automated Tests
+
+```bash
+# Frontend Tests (Vitest)
+cd frontend
+npm test
+
+# Backend Tests (Jest)
+cd backend
+npm test
+
+# Python Analyzer & ML Tests (Pytest)
+cd analyzer
+python -m pytest tests/ -v
+```
+
+---
+
+## 🤖 Machine Learning Model & Known Limitations
+
+- **Model Architecture:** Random Forest / Decision Tree Classifier (`analyzer/app/ml/model.pkl`)
+- **Features Extracted:** 17 quantitative repository metrics (LOC, complexity, test ratio, duplication %, security findings, git commits, quality score)
+- **Known Limitations:**
+  > [!WARNING]
+  > The ML maturity model is currently trained on a curated baseline dataset (`analyzer/app/ml/dataset.csv`). Due to the compact dataset size, predictions are best interpreted as an experimental maturity indicator alongside deterministic FACT metrics and rule-based HEURISTICS.
+
+---
+
+## 🛡️ Security & Resource Limits (End-to-End Enforced)
+
+- **Rate Limiting:** Maximum 10 repository analysis requests per 15-minute window per IP (`express-rate-limit`).
+- **Repository Size Limit:** Maximum allowable cloned repository size is **500 MB** (`MAX_REPO_SIZE_MB`). Attempts to analyze repos exceeding this limit return HTTP 413.
+- **Analysis Timeout:** Execution timeout strictly enforced at **300 seconds** (`ANALYSIS_TIMEOUT_SECONDS`).
+- **Code Execution Safety:** The analyzer treats all code as **untrusted input**. Code in target repositories is **NEVER executed**.
+
+---
+
+## 📜 License
+
+MIT License — see [LICENSE](LICENSE) for details.

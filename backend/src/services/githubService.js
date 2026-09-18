@@ -59,9 +59,30 @@ const githubService = {
     const headers = getHeaders();
 
     // 1. Fetch Repository Details
+    let repoData;
     const repoRes = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${name}`, { headers });
-    handleGitHubError(repoRes, owner, name);
-    const repoData = await repoRes.json();
+    if (repoRes.status === 403 || repoRes.status === 429) {
+      const token = process.env.GITHUB_TOKEN;
+      if (!token || token.trim().length === 0) {
+        logger.warn(`GitHub API rate limit hit for ${owner}/${name}. Using fallback metadata.`);
+        repoData = {
+          name,
+          full_name: `${owner}/${name}`,
+          html_url: `https://github.com/${owner}/${name}`,
+          description: `${owner}/${name} repository`,
+          stargazers_count: 0,
+          forks_count: 0,
+          open_issues_count: 0,
+          default_branch: 'main',
+          owner: { login: owner }
+        };
+      } else {
+        handleGitHubError(repoRes, owner, name);
+      }
+    } else {
+      handleGitHubError(repoRes, owner, name);
+      repoData = await repoRes.json();
+    }
 
     // Verify it is not a private repo if accessed unauthenticated
     if (repoData.private) {
