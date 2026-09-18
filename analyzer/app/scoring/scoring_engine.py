@@ -25,30 +25,30 @@ Score Bands:
   -  0.0 to 39.9:  Needs Improvement
 """
 
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 # ── CONFIGURABLE WEIGHT CONSTANTS ──────────────────────────────────────────
-WEIGHT_CODE_QUALITY   = 0.25
+WEIGHT_CODE_QUALITY = 0.25
 WEIGHT_MAINTAINABILITY = 0.20
-WEIGHT_ARCHITECTURE    = 0.20
-WEIGHT_TESTING         = 0.15
-WEIGHT_SECURITY        = 0.10
-WEIGHT_DOCUMENTATION   = 0.10
+WEIGHT_ARCHITECTURE = 0.20
+WEIGHT_TESTING = 0.15
+WEIGHT_SECURITY = 0.10
+WEIGHT_DOCUMENTATION = 0.10
 
 SCORE_WEIGHTS = {
-    "code_quality":   WEIGHT_CODE_QUALITY,
+    "code_quality": WEIGHT_CODE_QUALITY,
     "maintainability": WEIGHT_MAINTAINABILITY,
-    "architecture":    WEIGHT_ARCHITECTURE,
-    "testing":         WEIGHT_TESTING,
-    "security":        WEIGHT_SECURITY,
-    "documentation":   WEIGHT_DOCUMENTATION,
+    "architecture": WEIGHT_ARCHITECTURE,
+    "testing": WEIGHT_TESTING,
+    "security": WEIGHT_SECURITY,
+    "documentation": WEIGHT_DOCUMENTATION,
 }
 
 # ── SECURITY SEVERITY PENALTY CONSTANTS ─────────────────────────────────────
 SECURITY_PENALTY_CRITICAL = 25.0
-SECURITY_PENALTY_HIGH     = 15.0
-SECURITY_PENALTY_MEDIUM   = 5.0
-SECURITY_PENALTY_LOW      = 2.0
+SECURITY_PENALTY_HIGH = 15.0
+SECURITY_PENALTY_MEDIUM = 5.0
+SECURITY_PENALTY_LOW = 2.0
 
 
 def calculate_code_quality_score(metrics: Dict[str, Any], duplication: Dict[str, Any]) -> float:
@@ -274,22 +274,22 @@ def calculate_scores(
     Returns:
         Structured dictionary containing overall_score, score_band, sub_scores, and score_weights.
     """
-    code_quality_score   = calculate_code_quality_score(metrics, duplication)
+    code_quality_score = calculate_code_quality_score(metrics, duplication)
     maintainability_score = calculate_maintainability_score(complexity, duplication)
-    complexity_score      = calculate_complexity_score(complexity)
-    architecture_score   = calculate_architecture_score(architecture)
-    testing_score        = calculate_testing_score(testing)
-    security_score       = calculate_security_score(security)
-    documentation_score  = calculate_documentation_score(documentation)
+    complexity_score = calculate_complexity_score(complexity)
+    architecture_score = calculate_architecture_score(architecture)
+    testing_score = calculate_testing_score(testing)
+    security_score = calculate_security_score(security)
+    documentation_score = calculate_documentation_score(documentation)
 
     # Calculate Composite Overall Score using Configurable Weights
     overall_score = (
-        (code_quality_score   * WEIGHT_CODE_QUALITY) +
+        (code_quality_score * WEIGHT_CODE_QUALITY) +
         (maintainability_score * WEIGHT_MAINTAINABILITY) +
-        (architecture_score   * WEIGHT_ARCHITECTURE) +
-        (testing_score        * WEIGHT_TESTING) +
-        (security_score       * WEIGHT_SECURITY) +
-        (documentation_score  * WEIGHT_DOCUMENTATION)
+        (architecture_score * WEIGHT_ARCHITECTURE) +
+        (testing_score * WEIGHT_TESTING) +
+        (security_score * WEIGHT_SECURITY) +
+        (documentation_score * WEIGHT_DOCUMENTATION)
     )
     overall_score = round(max(0.0, min(100.0, overall_score)), 2)
     score_band = get_score_band(overall_score)

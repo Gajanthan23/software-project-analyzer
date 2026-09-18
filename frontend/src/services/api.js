@@ -40,8 +40,15 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // TODO (Phase 5): clear token and redirect to /login
-      console.warn('[API] 401 Unauthorised — auth handling added in Phase 5')
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      if (
+        typeof window !== 'undefined' &&
+        window.location.pathname !== '/login' &&
+        window.location.pathname !== '/register'
+      ) {
+        window.location.href = '/login?expired=true'
+      }
     }
     return Promise.reject(error)
   },

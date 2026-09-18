@@ -42,6 +42,7 @@ SUPPORTED_EXTENSIONS = {
 
 HIGH_COMPLEXITY_THRESHOLD = 10  # CC > 10 is considered high risk
 
+
 def get_severity_label(complexity: int) -> str:
     """Classifies cyclomatic complexity according to standard McCabe tiers."""
     if complexity <= 5:

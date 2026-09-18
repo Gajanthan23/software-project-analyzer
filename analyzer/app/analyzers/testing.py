@@ -17,7 +17,7 @@ import re
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Any, Set
 
 SKIP_DIRS = {
     ".git", "__pycache__", ".pytest_cache", ".mypy_cache",

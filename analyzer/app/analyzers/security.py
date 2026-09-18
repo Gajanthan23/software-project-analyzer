@@ -19,9 +19,10 @@ MANDATORY SECTION 15 RULE:
 import os
 import re
 import math
+import json
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Tuple
 
 SKIP_DIRS = {
     ".git", "__pycache__", ".pytest_cache", ".mypy_cache",

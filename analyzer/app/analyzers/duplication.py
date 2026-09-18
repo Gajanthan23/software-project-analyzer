@@ -127,7 +127,7 @@ def analyze_duplication(repo_path: str, total_code_loc: int = 0) -> Dict[str, An
         if len(records) < MIN_BLOCK_LINES:
             continue
         for i in range(len(records) - MIN_BLOCK_LINES + 1):
-            block_lines = [r[2] for r in records[i : i + MIN_BLOCK_LINES]]
+            block_lines = [r[2] for r in records[i:i + MIN_BLOCK_LINES]]
             block_text = "\n".join(block_lines)
             block_hash = hashlib.md5(block_text.encode("utf-8")).hexdigest()
 

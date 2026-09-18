@@ -22,7 +22,7 @@ import json
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any
 
 SKIP_DIRS = {
     ".git", "__pycache__", ".pytest_cache", ".mypy_cache",
@@ -30,6 +30,7 @@ SKIP_DIRS = {
     "dist", "build", ".build", "out", ".next", ".nuxt",
     "coverage", ".coverage", "vendor", "Pods"
 }
+
 
 def _parse_package_json(filepath: Path) -> Dict[str, Any]:
     """Parses npm package.json manifest."""

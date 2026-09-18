@@ -362,7 +362,7 @@ def analyze_repository(repo_path: str) -> Dict[str, Any]:
     # Primary language = language with most code_loc
     primary_language = "Unknown"
     if lang_stats:
-        primary_language = max(lang_stats, key=lambda l: lang_stats[l]["code_loc"])
+        primary_language = max(lang_stats, key=lambda lang_key: lang_stats[lang_key]["code_loc"])
 
     modules = source_files + test_files  # 1 module = 1 source file
 

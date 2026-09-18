@@ -52,17 +52,7 @@ jobs:
         run: npm ci
 
       - name: "🔍  ESLint (static analysis)"
-        # Allow lint warnings to not fail CI — only errors will fail
-        # Change --max-warnings 0 → 9999 if strict zero-warning policy not wanted
-        run: |
-          npx eslint . --ext js,jsx \
-            --report-unused-disable-directives \
-            --max-warnings 9999 \
-            --no-eslintrc \
-            --rule '{}'
-        continue-on-error: true
-        # NOTE: Full strict lint can be enabled by uncommenting and adjusting:
-        # run: npm run lint
+        run: npm run lint
 
       - name: "🧪  Run Vitest unit tests"
         run: npm test
