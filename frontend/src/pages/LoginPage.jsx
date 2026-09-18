@@ -3,15 +3,22 @@
  * 
  * Live login page component wired to authService.login.
  */
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authService } from '../services/authService';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (searchParams.get('expired') === 'true') {
+      setError('Authentication token has expired. Please sign in again.');
+    }
+  }, [searchParams]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
