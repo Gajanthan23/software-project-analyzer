@@ -9,11 +9,12 @@ const router = express.Router();
 const projectController  = require('../controllers/projectController');
 const analysisController = require('../controllers/analysisController');
 const { requireAuth } = require('../middleware/auth');
+const { analysisRateLimiter } = require('../middleware/rateLimiter');
 
 // Protect all project endpoints with JWT authentication
 router.use(requireAuth);
 
-router.post('/', projectController.createProject);
+router.post('/', analysisRateLimiter, projectController.createProject);
 router.get('/', projectController.getProjects);
 router.post('/compare', projectController.compareProjects);
 router.get('/:id', projectController.getProjectById);
@@ -22,7 +23,7 @@ router.get('/:id', projectController.getProjectById);
 router.post('/:id/download-debug', projectController.downloadDebugProject);
 
 // Phase 9–19 analysis pipeline endpoints (protected)
-router.post('/:id/analyze',                     analysisController.runAnalysis);
+router.post('/:id/analyze', analysisRateLimiter, analysisController.runAnalysis);
 router.get('/:id/analyses',                     analysisController.listRuns);
 router.get('/:id/analyses/latest',              analysisController.getLatestMetrics);
 router.get('/:id/analyses/latest/complexity',   analysisController.getLatestComplexity);
