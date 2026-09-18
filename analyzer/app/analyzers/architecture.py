@@ -25,7 +25,7 @@ Architectural Problems & Anti-Patterns (Smells):
 import os
 import re
 from pathlib import Path
-from typing import Dict, List, Any, Set, Tuple
+from typing import Dict, List, Any, Tuple
 
 SKIP_DIRS = {
     ".git", "__pycache__", ".pytest_cache", ".mypy_cache",

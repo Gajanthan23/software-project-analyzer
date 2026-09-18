@@ -28,6 +28,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
 @app.get("/health", tags=["Health"])
 def health_check():
     return {
@@ -35,6 +36,7 @@ def health_check():
         "service": "python-analyzer",
         "version": "1.0.0"
     }
+
 
 @app.post(
     "/analyze",
@@ -317,7 +319,7 @@ def analyze(request: AnalysisRequest):
         # ── Phase 14: REAL values ────────────────────────────────────────
         dependencies={
             "status":                     "ok",
-            "production_dependency_count":dependencies_data["production_dependency_count"],
+            "production_dependency_count": dependencies_data["production_dependency_count"],
             "dev_dependency_count":       dependencies_data["dev_dependency_count"],
             "total_dependency_count":     dependencies_data["total_dependency_count"],
             "ecosystems":                 dependencies_data["ecosystems"],

@@ -10,7 +10,6 @@ selects the best performing model, and serializes it to model.pkl.
 
 import os
 import sys
-import json
 import joblib
 import pandas as pd
 import numpy as np
@@ -43,6 +42,7 @@ FEATURE_COLUMNS = [
 ]
 
 TARGET_COLUMN = "maturity_label"
+
 
 def train_and_evaluate_models(csv_path: str, model_save_path: str):
     csv_file = Path(csv_path)
@@ -91,7 +91,7 @@ def train_and_evaluate_models(csv_path: str, model_save_path: str):
 
         # Predict on test set (or full set for small sample validation)
         y_pred = clf.predict(X_test)
-        
+
         acc = accuracy_score(y_test, y_pred)
         prec, rec, f1, _ = precision_recall_fscore_support(y_test, y_pred, average="weighted", zero_division=0)
         cm = confusion_matrix(y_test, y_pred, labels=clf.classes_)
@@ -151,6 +151,7 @@ def train_and_evaluate_models(csv_path: str, model_save_path: str):
     print(f"[OK] Successfully saved serialized model artifact to: {model_save_path}")
 
     return results, best_model_name
+
 
 if __name__ == "__main__":
     if hasattr(sys.stdout, "reconfigure"):

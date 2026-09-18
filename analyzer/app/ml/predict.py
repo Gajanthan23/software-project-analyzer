@@ -11,7 +11,6 @@ import os
 import joblib
 import pandas as pd
 import numpy as np
-from pathlib import Path
 from typing import Dict, Any
 
 MODEL_FILE_PATH = os.path.join(os.path.dirname(__file__), "model.pkl")
@@ -36,6 +35,7 @@ FEATURE_COLUMNS = [
     "overall_score"
 ]
 
+
 def load_model_payload():
     """Loads serialized model payload if present on disk."""
     if not os.path.exists(MODEL_FILE_PATH):
@@ -46,6 +46,7 @@ def load_model_payload():
     except Exception as e:
         print(f"[!] Warning: Failed to load ML model artifact: {e}")
         return None
+
 
 def predict_maturity(
     metrics: Dict[str, Any],

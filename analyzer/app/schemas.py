@@ -8,6 +8,7 @@ Conforms strictly to Section 33 specification shape.
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
 
+
 class AnalysisRequest(BaseModel):
     repository_path: str = Field(
         ...,
@@ -15,17 +16,20 @@ class AnalysisRequest(BaseModel):
         example="/tmp/software-analyzer-workspaces/analysis-12345"
     )
 
+
 class ModulePlaceholder(BaseModel):
     status: str = Field(default="not_implemented", description="Module implementation status")
     message: str = Field(default="Module analysis engine scheduled for future phase.", description="Description")
     facts: Dict[str, Any] = Field(default_factory=dict, description="FACT metrics measured directly")
     heuristics: Dict[str, Any] = Field(default_factory=dict, description="HEURISTIC rule interpretations")
 
+
 class PredictionPlaceholder(BaseModel):
     status: str = Field(default="not_implemented", description="ML Model status")
     message: str = Field(default="ML maturity prediction model arrives in Phase 24.", description="Description")
     prediction: Optional[str] = None
     confidence: Optional[float] = None
+
 
 class AnalysisResponse(BaseModel):
     status: str = Field(default="success", description="Overall API execution status")

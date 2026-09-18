@@ -19,7 +19,6 @@ Data Source Decision & Architecture:
      and merged into the final database persistence layer, as GitHub API tokens are managed in Node.
 """
 
-import os
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
