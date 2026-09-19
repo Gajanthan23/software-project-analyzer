@@ -192,7 +192,7 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
   // Check if we need to add a page break for section 4 & 5
   if (doc.y > 620) {
     doc.addPage();
-    drawHeader(doc, 'SOFTWARE QUALITY ANALYSIS REPORT (CONT.)', 'Engine Metrics, ML Prediction & Remediation Plan');
+    drawHeader(doc, 'SOFTWARE QUALITY ANALYSIS REPORT (CONT.)', 'Engine Metrics & Remediation Plan');
   }
 
   // 6. Engine Breakdown Summaries Grid
@@ -216,47 +216,13 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
 
   doc.y = engineY + 75;
 
-  // 7. ML Maturity Prediction Box
-  drawSectionTitle(doc, '5. MACHINE LEARNING MATURITY PREDICTION');
-
-  // Compute prediction from real stored metrics or use runData.prediction
-  let predLabel = runData.prediction?.prediction || 'Intermediate';
-  let predConfidence = runData.prediction?.confidence
-    ? (runData.prediction.confidence > 1 ? runData.prediction.confidence : runData.prediction.confidence * 100)
-    : 82.0;
-
-  if (!runData.prediction?.prediction && scores) {
-    const overallScore = parseFloat(scores.overall_score || 0);
-    const testFiles = parseInt(metrics?.test_files || testing?.test_files_count || 0, 10);
-    const secCount = runData.security ? (runData.security.total_findings || 0) : 0;
-    const dupPct = runData.duplication ? (runData.duplication.duplication_percentage || 0) : 0;
-
-    if (overallScore >= 70.0 && testFiles > 0 && secCount === 0 && dupPct < 10.0) {
-      predLabel = 'Advanced';
-      predConfidence = 91.2;
-    } else if (overallScore < 45.0 && testFiles === 0) {
-      predLabel = 'Beginner';
-      predConfidence = 85.7;
-    }
-  }
-
-  const mlY = doc.y;
-  doc.rect(40, mlY, 515, 50).fill('#faf5ff').stroke('#e9d5ff');
-
-  doc.fillColor('#6b21a8').fontSize(9).font('Helvetica-Bold').text('MODEL PREDICTED MATURITY LEVEL:', 52, mlY + 10);
-  doc.fillColor('#7e22ce').fontSize(14).font('Helvetica-Bold').text(predLabel.toUpperCase(), 52, mlY + 24);
-  doc.fillColor('#6b21a8').fontSize(8).font('Helvetica-Bold').text(`Confidence: ${predConfidence.toFixed(1)}%`, 240, mlY + 26);
-  doc.fillColor('#a855f7').fontSize(7).font('Helvetica-Oblique').text('"Model prediction — not an objective fact"', 340, mlY + 26, { align: 'right', width: 200 });
-
-  doc.y = mlY + 60;
-
-  // 8. Actionable Remediation Recommendations
+  // 5. Actionable Remediation Recommendations
   if (doc.y > 600) {
     doc.addPage();
     drawHeader(doc, 'SOFTWARE QUALITY ANALYSIS REPORT (CONT.)', 'Actionable Code Remediation Recommendations');
   }
 
-  drawSectionTitle(doc, '6. ACTIONABLE REMEDIATION RECOMMENDATIONS');
+  drawSectionTitle(doc, '5. ACTIONABLE REMEDIATION RECOMMENDATIONS');
 
   const recTop = doc.y;
   doc.rect(40, recTop, 515, 18).fill('#f1f5f9');

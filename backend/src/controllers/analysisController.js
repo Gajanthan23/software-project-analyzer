@@ -242,8 +242,6 @@ const analysisController = {
           git_history:    analysisResult.savedGit || analysisResult.analyzerResponse.git_history,
           scores:         analysisResult.analyzerResponse.scores,
           recommendations: analysisResult.analyzerResponse.recommendations,
-          // Placeholders for future phases — forward what the analyzer returned
-          prediction:     analysisResult.analyzerResponse.prediction,
         },
       });
 
@@ -318,40 +316,9 @@ const analysisController = {
         } catch (_) {}
       }
 
-      let prediction = null;
-      if (scores && metrics) {
-        const overallScore = parseFloat(scores.overall_score || 0);
-        const testFiles = parseInt(metrics.test_files || 0, 10);
-        const secCount = security ? (security.total_findings || 0) : 0;
-        const dupPct = duplication ? (duplication.duplication_percentage || 0) : 0;
-
-        let label = 'Intermediate';
-        if (overallScore >= 70.0 && testFiles > 0 && secCount === 0 && dupPct < 10.0) {
-          label = 'Advanced';
-        } else if (overallScore < 45.0 && testFiles === 0) {
-          label = 'Beginner';
-        }
-
-        prediction = {
-          status: 'completed',
-          prediction: label,
-          confidence: 88.5,
-          disclaimer: 'Model prediction — not an objective fact',
-          top_contributing_features: [
-            { feature: 'max_complexity', importance: 0.45, value: complexity?.max_complexity || 0 },
-            { feature: 'dependency_count', importance: 0.30, value: metrics.dependency_count || 0 },
-            { feature: 'source_files', importance: 0.25, value: metrics.source_files || 0 }
-          ],
-          model_info: {
-            algorithm: 'DecisionTree',
-            version: '1.0.0'
-          }
-        };
-      }
-
       return res.status(200).json({
         status: 'success',
-        data:   { metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history, scores, recommendations, prediction },
+        data:   { metrics, complexity, duplication, testing, documentation, dependencies, security, architecture, git_history, scores, recommendations },
       });
     } catch (error) {
       next(error);
