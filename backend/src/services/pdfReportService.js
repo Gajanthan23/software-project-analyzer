@@ -546,7 +546,7 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
 
   const archPattern    = architecture?.detected_pattern || 'Unavailable';
   const archConf       = architecture?.confidence_score !== undefined
-    ? `${(parseFloat(architecture.confidence_score) * 100).toFixed(1)}%`
+    ? `${parseFloat(architecture.confidence_score).toFixed(1)}%`
     : 'N/A';
   const archViolations = architecture?.layer_violations_count ?? 0;
 
