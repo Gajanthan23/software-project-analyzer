@@ -28,8 +28,9 @@ import MainLayout    from './components/Layout/MainLayout'
 import ProjectLayout from './components/Layout/ProjectLayout'
 
 // Auth pages
-import LoginPage    from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
+import LoginPage     from './pages/LoginPage'
+import RegisterPage  from './pages/RegisterPage'
+import VerifyOtpPage from './pages/VerifyOtpPage'
 
 // Top-level pages
 import DashboardPage from './pages/DashboardPage'
@@ -59,8 +60,9 @@ export default function App() {
 
         {/* ── Public auth routes ──────────────────────────────────────────── */}
         <Route element={<AuthLayout />}>
-          <Route path="/login"    element={<LoginPage />}    />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login"      element={<LoginPage />}     />
+          <Route path="/register"   element={<RegisterPage />}  />
+          <Route path="/verify-otp" element={<VerifyOtpPage />} />
         </Route>
 
         {/* ── Main app routes (Navbar only) ───────────────────────────────── */}

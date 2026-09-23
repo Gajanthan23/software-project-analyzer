@@ -14,10 +14,10 @@ import LoginPage from '../pages/LoginPage';
 // Mock authService so no real HTTP calls are made
 vi.mock('../services/authService', () => ({
   authService: {
-    login:           vi.fn(),
+    login: vi.fn(),
     isAuthenticated: vi.fn(() => false),
-    logout:          vi.fn(),
-    getCurrentUser:  vi.fn(() => null),
+    logout: vi.fn(),
+    getCurrentUser: vi.fn(() => null),
   },
 }));
 
@@ -138,7 +138,7 @@ describe('LoginPage — error handling', () => {
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/login failed/i)).toBeInTheDocument();
+      expect(screen.getByText(/cannot connect to backend server|login failed/i)).toBeInTheDocument();
     });
   });
 

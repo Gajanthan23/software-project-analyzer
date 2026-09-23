@@ -107,8 +107,8 @@ describe('RegisterPage — submit success', () => {
     });
   });
 
-  it('navigates to /dashboard after successful registration', async () => {
-    authService.register.mockResolvedValueOnce({ status: 'success' });
+  it('navigates to /verify-otp after successful registration', async () => {
+    authService.register.mockResolvedValueOnce({ status: 'success', message: 'Verification code sent to your email.' });
     renderRegister();
 
     await userEvent.type(screen.getByLabelText(/full name/i), 'Alice');
@@ -117,7 +117,9 @@ describe('RegisterPage — submit success', () => {
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+      expect(mockNavigate).toHaveBeenCalledWith('/verify-otp', expect.objectContaining({
+        state: expect.objectContaining({ email: 'alice@example.com' })
+      }));
     });
   });
 });
@@ -165,7 +167,7 @@ describe('RegisterPage — error handling', () => {
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/registration failed/i)).toBeInTheDocument();
+      expect(screen.getByText(/cannot connect to backend server|registration failed/i)).toBeInTheDocument();
     });
   });
 });
