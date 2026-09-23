@@ -1,7 +1,7 @@
 /**
  * pages/HistoryPage.jsx
  *
- * Analysis History & Score Trends Page — Phase 21 (Section 24 & Section 26)
+ * Analysis History & Score Trends Page
  * Displays past analysis runs, chronological score trend charts (Recharts),
  * score deltas, failed run diagnostic callouts, and historical run inspection drill-downs.
  */

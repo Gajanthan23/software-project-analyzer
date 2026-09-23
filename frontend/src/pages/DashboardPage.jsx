@@ -87,14 +87,14 @@ export default function DashboardPage() {
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <section>
         <span className="badge bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30">
-          Phase 6 — GitHub Integration Active
+          GitHub Integration Engine Active
         </span>
         <h1 className="mt-4 text-4xl font-extrabold leading-tight text-slate-100">
           Analyze any{' '}
           <span className="gradient-text">GitHub repository</span>
         </h1>
         <p className="mt-3 max-w-xl text-slate-400">
-          Enter a public GitHub URL to retrieve metadata, structure, and prepare it for static complexity analysis.
+          Enter a public GitHub URL to retrieve metadata, structure, and run comprehensive static complexity and quality analysis.
         </p>
 
         {/* Error notification */}
@@ -135,10 +135,10 @@ export default function DashboardPage() {
           <span className="ml-2 badge bg-slate-800 text-slate-500">FACT</span>
         </h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatCard label="Projects added" value={projects.length.toString()} note="Saved in PostgreSQL" accent="indigo" />
-          <StatCard label="Analyses run" value="0" note="Phase 8+" accent="violet" />
-          <StatCard label="Avg. overall score" value="—" note="Phase 18+" accent="emerald" />
-          <StatCard label="Findings detected" value="—" note="Phase 15+" accent="amber" />
+          <StatCard label="Projects added" value={projects.length.toString()} note="Saved in Workspace" accent="indigo" />
+          <StatCard label="Analyses run" value="0" note="Total Runs" accent="violet" />
+          <StatCard label="Avg. overall score" value="—" note="Quality Avg" accent="emerald" />
+          <StatCard label="Findings detected" value="—" note="Security & Quality" accent="amber" />
         </div>
       </section>
 
@@ -205,7 +205,7 @@ export default function DashboardPage() {
       {/* ── Score band legend ────────────────────────────────────────────── */}
       <section>
         <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">
-          Score Bands <span className="text-slate-600">(project-defined — Section 18)</span>
+          Score Bands <span className="text-slate-600">(Quality Scale)</span>
         </h2>
         <div className="flex flex-wrap gap-2">
           {[

@@ -1,8 +1,8 @@
 /**
  * pages/QualityPage.jsx
  *
- * Code Quality & Duplication Analysis Dashboard — Phase 20
- * Powered by jscpd / line hash clone detection algorithm (Phase 11 engine).
+ * Code Quality & Duplication Analysis Dashboard
+ * Powered by line hash clone detection algorithm.
  */
 
 import React, { useState, useEffect } from 'react';

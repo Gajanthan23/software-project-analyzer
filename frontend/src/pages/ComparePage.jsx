@@ -1,12 +1,12 @@
 /**
  * pages/ComparePage.jsx — /compare
- * Phase 22: Side-by-side Project Quality & Metric Comparison
+ * Side-by-side Project Quality & Metric Comparison
  *
- * Section 25:
+ * Overview:
  *   - Allows user to pick 2+ analyzed projects
  *   - Side-by-side scores & key telemetry metric table
  *   - Recharts Grouped Bar Chart & Radar Chart for sub-scores comparison
- *   - Rule 42 Heuristic badges
+ *   - Classification badges (FACT / HEURISTIC / ML)
  */
 
 import { useState, useEffect, useMemo } from 'react';

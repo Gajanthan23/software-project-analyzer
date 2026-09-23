@@ -176,7 +176,7 @@ export default function ProjectOverviewPage() {
                 onClick={handleDownloadPdfReport}
                 disabled={downloadingPdf}
                 className="px-4 py-2.5 rounded-lg font-semibold text-xs border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-all flex items-center justify-center gap-2 shadow-sm"
-                title="Download Phase 25 Section 27 PDF Report"
+                title="Download Comprehensive PDF Report"
               >
                 {downloadingPdf ? (
                   <>
@@ -235,7 +235,7 @@ export default function ProjectOverviewPage() {
           <div className="space-y-2 text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-2">
               <AnalysisTypeBadge type="heuristic" />
-              <span className="text-xs text-slate-500">Section 18 Quality Scoring Methodology</span>
+              <span className="text-xs text-slate-500">Quality Scoring Methodology</span>
             </div>
             <h2 className="text-xl font-bold text-slate-100">Overall Software Quality Score</h2>
             <p className="text-xs text-slate-400 max-w-md">

@@ -1,9 +1,9 @@
 /**
  * pages/RecommendationsPage.jsx
  *
- * Actionable Software Quality Recommendation Dashboard — Phase 20
- * Powered by rule-based remediation generator (Phase 19 engine).
- * Explicitly labeled as HEURISTIC (Section 42).
+ * Actionable Software Quality Recommendation Dashboard
+ * Powered by rule-based remediation generator.
+ * Labeled as HEURISTIC rule interpretations.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -71,7 +71,7 @@ export default function RecommendationsPage() {
             <AnalysisTypeBadge type="heuristic" />
           </h1>
           <p className="mt-1 text-xs text-slate-400">
-            Rule-based quality remediation suggestions prioritized by impact (Section 19)
+            Rule-based quality remediation suggestions prioritized by impact
           </p>
         </div>
         <span className="badge bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/30 text-xs font-bold">
