@@ -227,24 +227,9 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
 
   doc.y = factTop + 55;
 
-  // ── 6. ML Prediction — Honesty Section (Section 22/42) ────────────────────
-  guardPageBreak(doc, 680);
-  drawSectionTitle(doc, '4. ML MATURITY PREDICTION');
-
-  const predY = doc.y;
-  doc.rect(40, predY, 515, 38).fill('#fefce8');
-  doc.rect(40, predY, 515, 38).stroke('#fde68a');
-
-  doc.fillColor('#92400e').fontSize(9).font('Helvetica-Bold')
-     .text('ML prediction unavailable for this analysis', 52, predY + 8);
-  doc.fillColor('#78350f').fontSize(7.5).font('Helvetica')
-     .text('No ML model prediction is wired into this pipeline. Maturity assessment is derived exclusively from the heuristic quality scores above. (Section 22/42 Honesty Rule — ML PREDICTION must never be fabricated.)', 52, predY + 21, { width: 490 });
-
-  doc.y = predY + 48;
-
-  // ── 7. Complexity Detail ──────────────────────────────────────────────────
+  // ── 4. Complexity Detail ──────────────────────────────────────────────────
   guardPageBreak(doc, 640);
-  drawSectionTitle(doc, '5. COMPLEXITY ENGINE — DETAIL');
+  drawSectionTitle(doc, '4. COMPLEXITY ENGINE — DETAIL');
 
   // Summary bar
   const cxSumY = doc.y;
@@ -303,9 +288,9 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
   }
   doc.y += 8;
 
-  // ── 8. Duplication Detail ─────────────────────────────────────────────────
+  // ── 5. Duplication Detail ─────────────────────────────────────────────────
   guardPageBreak(doc, 620);
-  drawSectionTitle(doc, '6. CODE DUPLICATION — DETAIL');
+  drawSectionTitle(doc, '5. CODE DUPLICATION — DETAIL');
 
   const dupSumY = doc.y;
   doc.rect(40, dupSumY, 515, 30).fill('#f8fafc').stroke('#e2e8f0');
@@ -361,9 +346,9 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
   }
   doc.y += 8;
 
-  // ── 9. Testing Detail ─────────────────────────────────────────────────────
+  // ── 6. Testing Detail ─────────────────────────────────────────────────────
   guardPageBreak(doc, 600);
-  drawSectionTitle(doc, '7. TESTING SUITE — DETAIL');
+  drawSectionTitle(doc, '6. TESTING SUITE — DETAIL');
 
   const testY = doc.y;
   doc.rect(40, testY, 515, 50).fill('#f8fafc').stroke('#e2e8f0');
@@ -403,9 +388,9 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
 
   doc.y = testY + 60;
 
-  // ── 10. Documentation Checklist ───────────────────────────────────────────
+  // ── 7. Documentation Checklist ───────────────────────────────────────────
   guardPageBreak(doc, 620);
-  drawSectionTitle(doc, '8. DOCUMENTATION COMPLETENESS CHECKLIST');
+  drawSectionTitle(doc, '7. DOCUMENTATION COMPLETENESS CHECKLIST');
 
   const docSumY = doc.y;
   doc.rect(40, docSumY, 515, 20).fill('#f1f5f9');
@@ -471,9 +456,9 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
   }
   doc.y += 8;
 
-  // ── 11. Security Findings Table ───────────────────────────────────────────
+  // ── 8. Security Findings Table ───────────────────────────────────────────
   guardPageBreak(doc, 580);
-  drawSectionTitle(doc, '9. SECURITY FINDINGS — FULL DETAIL');
+  drawSectionTitle(doc, '8. SECURITY FINDINGS — FULL DETAIL');
 
   const secFindings = Array.isArray(security?.findings) ? security.findings : [];
   const secTotal    = security?.total_findings ?? secFindings.length;
@@ -537,9 +522,9 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
   }
   doc.y += 8;
 
-  // ── 12. Architecture Detail ───────────────────────────────────────────────
+  // ── 9. Architecture Detail ───────────────────────────────────────────────
   guardPageBreak(doc, 580);
-  drawSectionTitle(doc, '10. ARCHITECTURE ANALYSIS — DETAIL');
+  drawSectionTitle(doc, '9. ARCHITECTURE ANALYSIS — DETAIL');
 
   const archY = doc.y;
   doc.rect(40, archY, 515, 30).fill('#f8fafc').stroke('#e2e8f0');
@@ -588,9 +573,9 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
   }
   doc.y += 8;
 
-  // ── 13. Git History Summary ───────────────────────────────────────────────
+  // ── 10. Git History Summary ───────────────────────────────────────────────
   guardPageBreak(doc, 620);
-  drawSectionTitle(doc, '11. GIT HISTORY SUMMARY');
+  drawSectionTitle(doc, '10. GIT HISTORY SUMMARY');
 
   const gitY = doc.y;
   doc.rect(40, gitY, 515, 50).fill('#f8fafc').stroke('#e2e8f0');
@@ -629,9 +614,9 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
 
   doc.y = gitY + 58;
 
-  // ── 14. Domain Engine Summaries (brief) ───────────────────────────────────
+  // ── 11. Domain Engine Summaries (brief) ───────────────────────────────────
   guardPageBreak(doc, 640);
-  drawSectionTitle(doc, '12. DOMAIN ENGINE METRIC SUMMARIES');
+  drawSectionTitle(doc, '11. DOMAIN ENGINE METRIC SUMMARIES');
 
   const engineY = doc.y;
   doc.rect(40, engineY, 250, 55).fill('#f8fafc').stroke('#e2e8f0');
@@ -650,9 +635,9 @@ function generateAnalysisPdfReport({ project, runData }, resStream) {
 
   doc.y = engineY + 65;
 
-  // ── 15. Full Recommendations — paginated ──────────────────────────────────
+  // ── 12. Full Recommendations — paginated ──────────────────────────────────
   guardPageBreak(doc, 580);
-  drawSectionTitle(doc, '13. FULL ACTIONABLE REMEDIATION RECOMMENDATIONS');
+  drawSectionTitle(doc, '12. FULL ACTIONABLE REMEDIATION RECOMMENDATIONS');
 
   const allRecs = Array.isArray(recommendations) ? recommendations : [];
 
