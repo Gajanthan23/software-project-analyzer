@@ -1,8 +1,8 @@
 /**
  * pages/GitHistoryPage.jsx
  *
- * Git Commit Log & Contributor Telemetry Dashboard
- * Powered by Git subprocess log parser & GitHub REST API.
+ * Git Commit Log & Contributor Telemetry Dashboard — Phase 20
+ * Powered by Git subprocess log parser & GitHub REST API (Phase 17 engine).
  */
 
 import React, { useState, useEffect } from 'react';
@@ -62,7 +62,7 @@ export default function GitHistoryPage() {
             <AnalysisTypeBadge type="fact" />
           </h1>
           <p className="mt-1 text-xs text-slate-400">
-            Commit logs parsed from local clone + PRs/Issues fetched via GitHub REST API
+            Commit logs parsed from local clone + PRs/Issues fetched via GitHub REST API (Section 17)
           </p>
         </div>
         <span className="badge bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/30 text-xs">

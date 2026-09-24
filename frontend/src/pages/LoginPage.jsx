@@ -34,22 +34,7 @@ export default function LoginPage() {
       await authService.login(formData);
       navigate('/dashboard');
     } catch (err) {
-      const respData = err.response?.data;
-      if (respData?.code === 'ACCOUNT_NOT_VERIFIED' || respData?.data?.is_verified === false || err.response?.status === 403) {
-        const targetEmail = respData?.data?.email || formData.email;
-        const msg = respData?.message || 'Please verify your email address. A code has been sent.';
-        navigate('/verify-otp', {
-          state: {
-            email: targetEmail,
-            message: msg
-          }
-        });
-        return;
-      }
-
-      const msg = respData?.message ||
-        respData?.errors?.[0] ||
-        (!err.response ? 'Cannot connect to backend server. Please ensure the Express backend is running on port 4000.' : 'Login failed. Please check your credentials.');
+      const msg = err.response?.data?.message || err.response?.data?.errors?.[0] || 'Login failed. Please check your credentials.';
       setError(msg);
     } finally {
       setLoading(false);

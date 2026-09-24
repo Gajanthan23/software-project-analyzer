@@ -24,17 +24,10 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const res = await authService.register(formData);
-      navigate('/verify-otp', {
-        state: {
-          email: formData.email,
-          message: res.message || 'Verification code sent to your email.'
-        }
-      });
+      await authService.register(formData);
+      navigate('/dashboard');
     } catch (err) {
-      const msg = err.response?.data?.message ||
-        err.response?.data?.errors?.[0] ||
-        (!err.response ? 'Cannot connect to backend server. Please ensure the Express backend is running on port 4000.' : 'Registration failed. Please check your details.');
+      const msg = err.response?.data?.message || err.response?.data?.errors?.[0] || 'Registration failed. Please check your details.';
       setError(msg);
     } finally {
       setLoading(false);

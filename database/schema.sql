@@ -10,26 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    is_verified BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-
--- Ensure is_verified column exists for existing tables
-ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT false;
-
--- OTP Verifications table
-CREATE TABLE IF NOT EXISTS otp_verifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    otp_code_hash VARCHAR(255) NOT NULL,
-    purpose VARCHAR(50) NOT NULL DEFAULT 'registration',
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    attempts INT DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_otp_verifications_user_purpose ON otp_verifications(user_id, purpose);
-
 
 -- Projects table (Phase 6)
 CREATE TABLE IF NOT EXISTS projects (

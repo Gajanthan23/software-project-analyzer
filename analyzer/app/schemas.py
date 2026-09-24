@@ -24,6 +24,12 @@ class ModulePlaceholder(BaseModel):
     heuristics: Dict[str, Any] = Field(default_factory=dict, description="HEURISTIC rule interpretations")
 
 
+class PredictionPlaceholder(BaseModel):
+    status: str = Field(default="not_implemented", description="ML Model status")
+    message: str = Field(default="ML maturity prediction model arrives in Phase 24.", description="Description")
+    prediction: Optional[str] = None
+    confidence: Optional[float] = None
+
 
 class AnalysisResponse(BaseModel):
     status: str = Field(default="success", description="Overall API execution status")
@@ -40,3 +46,4 @@ class AnalysisResponse(BaseModel):
     git_history: Dict[str, Any] = Field(..., description="Git commit & contributor statistics — Phase 17")
     scores: Dict[str, Any] = Field(..., description="Category & overall quality scoring — Phase 18")
     recommendations: List[Dict[str, Any]] = Field(..., description="Rule-based recommendations — Phase 19")
+    prediction: Dict[str, Any] = Field(..., description="ML Maturity Prediction — Phase 24")

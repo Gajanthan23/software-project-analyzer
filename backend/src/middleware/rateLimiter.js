@@ -30,36 +30,4 @@ const apiRateLimiter = rateLimit({
   }
 });
 
-const otpResendRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3, // Max 3 resend requests per 15-minute window
-  keyGenerator: (req) => {
-    return req.body && req.body.email ? req.body.email.toLowerCase().trim() : req.ip;
-  },
-  validate: { keyGeneratorIpFallback: false },
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    status: 'error',
-    message: 'Too many OTP resend requests. Please try again after 15 minutes.'
-  }
-});
-
-const otpVerifyRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Max 10 verification attempts per 15-minute window
-  keyGenerator: (req) => {
-    return req.body && req.body.email ? req.body.email.toLowerCase().trim() : req.ip;
-  },
-  validate: { keyGeneratorIpFallback: false },
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    status: 'error',
-    message: 'Too many verification attempts. Please try again after 15 minutes.'
-  }
-});
-
-
-module.exports = { analysisRateLimiter, apiRateLimiter, otpResendRateLimiter, otpVerifyRateLimiter };
-
+module.exports = { analysisRateLimiter, apiRateLimiter };

@@ -11,13 +11,13 @@ const userModel = {
    * Create a new user in the database.
    * Returns created user object excluding password_hash.
    */
-  create: async ({ name, email, passwordHash, isVerified = false }) => {
+  create: async ({ name, email, passwordHash }) => {
     const query = `
-      INSERT INTO users (name, email, password_hash, is_verified)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, name, email, is_verified, created_at;
+      INSERT INTO users (name, email, password_hash)
+      VALUES ($1, $2, $3)
+      RETURNING id, name, email, created_at;
     `;
-    const result = await db.query(query, [name, email.toLowerCase().trim(), passwordHash, isVerified]);
+    const result = await db.query(query, [name, email.toLowerCase().trim(), passwordHash]);
     return result.rows[0];
   },
 
@@ -26,7 +26,7 @@ const userModel = {
    */
   findByEmail: async (email) => {
     const query = `
-      SELECT id, name, email, password_hash, is_verified, created_at
+      SELECT id, name, email, password_hash, created_at
       FROM users
       WHERE LOWER(email) = LOWER($1);
     `;
@@ -39,23 +39,9 @@ const userModel = {
    */
   findById: async (id) => {
     const query = `
-      SELECT id, name, email, is_verified, created_at
+      SELECT id, name, email, created_at
       FROM users
       WHERE id = $1;
-    `;
-    const result = await db.query(query, [id]);
-    return result.rows[0];
-  },
-
-  /**
-   * Mark user as verified in database.
-   */
-  verifyUser: async (id) => {
-    const query = `
-      UPDATE users
-      SET is_verified = true
-      WHERE id = $1
-      RETURNING id, name, email, is_verified, created_at;
     `;
     const result = await db.query(query, [id]);
     return result.rows[0];

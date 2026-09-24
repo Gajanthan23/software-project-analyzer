@@ -1,39 +1,22 @@
 /**
  * services/authService.js
  * 
- * Frontend API client service for user authentication and OTP verification.
+ * Frontend API client service for user authentication.
  */
 
 import api from './api';
 
 export const authService = {
   /**
-   * Register a new user account. Returns verification message and email (no token).
+   * Register a new user account.
    */
   register: async ({ name, email, password }) => {
     const response = await api.post('/auth/register', { name, email, password });
-    return response.data;
-  },
-
-  /**
-   * Verify OTP code sent to user email.
-   * On success, stores token and user in localStorage.
-   */
-  verifyOtp: async ({ email, otp }) => {
-    const response = await api.post('/auth/verify-otp', { email, otp });
     const { token, user } = response.data.data;
     if (token) {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
     }
-    return response.data;
-  },
-
-  /**
-   * Resend a fresh OTP verification code.
-   */
-  resendOtp: async ({ email }) => {
-    const response = await api.post('/auth/resend-otp', { email });
     return response.data;
   },
 

@@ -19,7 +19,8 @@ export default function NotFoundPage() {
         Page not found
       </h1>
       <p className="relative mt-2 text-sm text-slate-500 max-w-sm">
-        The page you&apos;re looking for doesn&apos;t exist or may have been moved.
+        The page you&apos;re looking for doesn&apos;t exist or hasn&apos;t
+        been built yet in this phase of the project.
       </p>
       <Link to="/dashboard"
             className="btn-primary relative mt-8">

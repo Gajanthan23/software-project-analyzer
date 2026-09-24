@@ -53,7 +53,7 @@ export default function AuthLayout() {
 
       {/* Footer note */}
       <p className="relative mt-8 text-center text-xs text-slate-600">
-        Software Project Complexity &amp; Quality Analyzer
+        Software Project Complexity &amp; Quality Analyzer — Phase 2
       </p>
     </div>
   )

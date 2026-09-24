@@ -1,8 +1,8 @@
 /**
  * pages/TestingPage.jsx
  *
- * Automated Test Suite & Coverage Dashboard
- * Powered by test structure scanner & coverage report parser.
+ * Automated Test Suite & Coverage Dashboard — Phase 20
+ * Powered by test structure scanner & coverage report parser (Phase 12 engine).
  */
 
 import React, { useState, useEffect } from 'react';

@@ -1,8 +1,8 @@
 /**
  * pages/ComplexityPage.jsx
  *
- * Cyclomatic Complexity Analysis Dashboard
- * Powered by lizard AST parser.
+ * Cyclomatic Complexity Analysis Dashboard — Phase 20
+ * Powered by lizard AST parser (Phase 10 engine).
  */
 
 import React, { useState, useEffect } from 'react';

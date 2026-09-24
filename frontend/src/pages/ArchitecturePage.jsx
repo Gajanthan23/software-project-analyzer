@@ -1,8 +1,8 @@
 /**
  * pages/ArchitecturePage.jsx
  *
- * Heuristic Architecture Pattern & Layering Violation Analyzer Dashboard
- * Labeled as HEURISTIC rule interpretations.
+ * Heuristic Architecture Pattern & Layering Violation Analyzer Dashboard — Phase 20
+ * Explicitly labeled as HEURISTIC (Rule 16 & Section 42).
  */
 
 import React, { useState, useEffect } from 'react';
@@ -92,7 +92,7 @@ export default function ArchitecturePage() {
             <AnalysisTypeBadge type="heuristic" />
           </h1>
           <p className="mt-1 text-xs text-slate-400">
-            Folder structure conventions & cross-layer import boundary analysis
+            Folder structure conventions & cross-layer import boundary analysis (Section 16 & Section 42)
           </p>
         </div>
         <span className="badge bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30 text-xs font-bold uppercase">

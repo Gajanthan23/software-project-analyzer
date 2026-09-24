@@ -1,8 +1,8 @@
 /**
  * pages/SecurityPage.jsx
  *
- * Static Security Analysis & Vulnerability Findings Dashboard
- * Powered by secret scanning & static security rule pattern engine.
+ * Static Security Analysis & Vulnerability Findings Dashboard — Phase 20
+ * Powered by TruffleHog secret scanning & Semgrep rule pattern engine (Phase 15).
  * Enhanced with user-friendly risk explanations, build artifact filters, and code remediations.
  */
 

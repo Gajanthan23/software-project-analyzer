@@ -2,7 +2,7 @@
  * components/AnalysisTypeBadge.jsx
  *
  * Section 42 & Rule 16 Compliance:
- * Visually distinguishes FACTS vs HEURISTICS in the UI.
+ * Visually distinguishes FACTS vs HEURISTICS vs ML PREDICTIONS in the UI.
  */
 
 import React from 'react';
@@ -20,6 +20,12 @@ const BADGE_CONFIGS = {
     bg: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
     icon: '💡'
   },
+  prediction: {
+    label: 'ML PREDICTION',
+    tooltip: 'Predicted using trained machine learning classification models',
+    bg: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+    icon: '🤖'
+  }
 };
 
 export default function AnalysisTypeBadge({ type = 'fact', className = '' }) {
